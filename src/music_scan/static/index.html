@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music Scan</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66;
+    --border: #deded8; --accent: #2f5fd0; --error: #b42318;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615; --panel: #1f1f1d; --text: #ecece8; --muted: #9a9a94;
+      --border: #34342f; --accent: #7aa2ff; --error: #ff8a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 16px; }
+  h1 { font-size: 22px; margin: 0 0 20px; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  section {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; margin-bottom: 16px;
+  }
+  #drop {
+    display: block; border: 2px dashed var(--border); border-radius: 8px;
+    padding: 28px 16px; text-align: center; cursor: pointer; color: var(--muted);
+  }
+  #drop.over, #drop:hover { border-color: var(--accent); }
+  #drop strong { color: var(--text); }
+  #pdf { display: none; }
+  .options { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 16px 0; }
+  .options fieldset { border: 0; margin: 0; padding: 0; display: flex; gap: 16px; }
+  .options legend { color: var(--muted); font-size: 13px; padding: 0; margin-bottom: 4px; }
+  label.check { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  button {
+    font: inherit; background: var(--accent); color: #fff; border: 0;
+    border-radius: 6px; padding: 8px 20px; cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: default; }
+  #status { display: flex; align-items: center; gap: 10px; }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .muted { color: var(--muted); }
+  .error { color: var(--error); white-space: pre-wrap; }
+  ul.files { margin: 0; padding-left: 20px; }
+  ul.files a { color: var(--accent); word-break: break-all; }
+  .render { margin-top: 12px; display: grid; gap: 12px; }
+  .render img { width: 100%; background: #fff; border: 1px solid var(--border); border-radius: 4px; }
+  h3.movement { font-size: 14px; margin: 12px 0 0; }
+  .summary { white-space: pre-wrap; margin: 8px 0; }
+  .secondary { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+  .secondary a { color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Music Scan</h1>
+
+  <section>
+    <form id="form">
+      <label id="drop" for="pdf">
+        <span id="drop-text"><strong>Choose a PDF</strong> or drop one here</span>
+      </label>
+      <input type="file" id="pdf" name="pdf" accept="application/pdf,.pdf">
+      <div class="options">
+        <fieldset>
+          <legend>Engines</legend>
+          <label class="check"><input type="checkbox" name="engines" value="audiveris" checked> Audiveris</label>
+          <label class="check"><input type="checkbox" name="engines" value="homr"> homr</label>
+        </fieldset>
+        <fieldset>
+          <legend>Also produce</legend>
+          <label class="check"><input type="checkbox" name="mei" value="true"> MEI</label>
+          <label class="check"><input type="checkbox" name="render" value="true" checked> Rendered preview</label>
+        </fieldset>
+        <fieldset>
+          <legend>Layout</legend>
+          <label class="check"><input type="checkbox" name="page_breaks" value="true" checked> Keep the PDF's page breaks</label>
+        </fieldset>
+        <fieldset>
+          <legend>Accuracy</legend>
+          <label class="check"><input type="checkbox" name="reconcile" value="true" checked> Correct from the PDF when possible</label>
+        </fieldset>
+      </div>
+      <button type="submit" id="submit" disabled>Scan</button>
+      <span id="form-error" class="error"></span>
+    </form>
+  </section>
+
+  <section id="status-panel" hidden>
+    <div id="status"></div>
+  </section>
+
+  <div id="results"></div>
+</main>
+
+<script>
+const form = document.getElementById("form");
+const pdfInput = document.getElementById("pdf");
+const drop = document.getElementById("drop");
+const dropText = document.getElementById("drop-text");
+const submit = document.getElementById("submit");
+const formError = document.getElementById("form-error");
+const statusPanel = document.getElementById("status-panel");
+const statusEl = document.getElementById("status");
+const results = document.getElementById("results");
+const ENGINE_NAMES = { audiveris: "Audiveris", homr: "homr" };
+let running = false;
+
+function formatSize(bytes) {
+  return bytes < 1048576 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
+}
+
+function updateForm() {
+  const file = pdfInput.files[0];
+  dropText.innerHTML = file
+    ? `<strong></strong> <span class="muted">(${formatSize(file.size)})</span>`
+    : "<strong>Choose a PDF</strong> or drop one here";
+  if (file) dropText.querySelector("strong").textContent = file.name;
+  const anyEngine = form.querySelectorAll("input[name=engines]:checked").length > 0;
+  submit.disabled = running || !file || !anyEngine;
+}
+
+pdfInput.addEventListener("change", updateForm);
+form.addEventListener("change", updateForm);
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => {
+  e.preventDefault();
+  drop.classList.remove("over");
+  if (e.dataTransfer.files.length) {
+    pdfInput.files = e.dataTransfer.files;
+    updateForm();
+  }
+});
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  formError.textContent = "";
+  running = true;
+  updateForm();
+  results.replaceChildren();
+  try {
+    const res = await fetch("/api/jobs", { method: "POST", body: new FormData(form) });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.detail || res.statusText);
+    poll(body.id);
+  } catch (err) {
+    formError.textContent = " " + err.message;
+    running = false;
+    updateForm();
+  }
+});
+
+function formatTime(seconds) {
+  const s = Math.floor(seconds);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+async function poll(id) {
+  const job = await (await fetch(`/api/jobs/${id}`)).json();
+  showStatus(job);
+  showResults(job);
+  if (job.status === "queued" || job.status === "running") {
+    setTimeout(() => poll(id), 1000);
+  } else {
+    running = false;
+    updateForm();
+  }
+}
+
+function showStatus(job) {
+  statusPanel.hidden = false;
+  const busy = job.status === "queued" || job.status === "running";
+  const text = job.status === "queued" ? "Waiting for the previous scan to finish"
+    : job.status === "running" ? `Scanning with ${ENGINE_NAMES[job.current]}`
+    : job.status === "done" ? "Done"
+    : "Every engine failed";
+  statusEl.innerHTML = (busy ? '<div class="spinner"></div>' : "") + "<span></span>";
+  statusEl.querySelector("span").textContent =
+    `${job.pdf}: ${text}, ${formatTime(job.elapsed)}`;
+}
+
+function fileUrl(job, rel) {
+  return `/api/jobs/${job.id}/files/` + rel.split("/").map(encodeURIComponent).join("/");
+}
+
+function showResults(job) {
+  const finished = Object.entries(job.results).filter(([name]) => name !== job.current);
+  if (finished.length === results.children.length) return;
+  results.replaceChildren(...finished.map(([name, r]) => {
+    const section = document.createElement("section");
+    const h = document.createElement("h2");
+    h.textContent = `${ENGINE_NAMES[name]} `;
+    const time = document.createElement("span");
+    time.className = "muted";
+    time.textContent = `${r.seconds.toFixed(1)} s`;
+    h.append(time);
+    section.append(h);
+    if (r.error) {
+      const p = document.createElement("p");
+      p.className = "error";
+      p.textContent = r.error;
+      section.append(p);
+    }
+    for (const m of r.movements) {
+      const block = document.createElement("div");
+      if (r.movements.length > 1) {
+        const h3 = document.createElement("h3");
+        h3.className = "movement";
+        h3.textContent = m.name;
+        block.append(h3);
+      }
+      for (const [text, cls] of [[m.note, "muted"], [m.summary, "summary"]]) {
+        if (!text) continue;
+        const p = document.createElement("p");
+        p.className = cls;
+        p.textContent = text;
+        block.append(p);
+      }
+      const links = [[m.raw, "Original Audiveris file (uncorrected)"], [m.report, "Full list of changes (JSON)"]].filter(([rel]) => rel);
+      if (links.length) {
+        const p = document.createElement("p");
+        p.className = "secondary";
+        links.forEach(([rel, label], i) => {
+          const a = document.createElement("a");
+          a.href = fileUrl(job, rel);
+          a.download = rel.split("/").pop();
+          a.textContent = label;
+          if (i) p.append(" | ");
+          p.append(a);
+        });
+        block.append(p);
+      }
+      section.append(block);
+    }
+    if (r.files.length) {
+      const ul = document.createElement("ul");
+      ul.className = "files";
+      for (const rel of r.files) {
+        const a = document.createElement("a");
+        a.href = fileUrl(job, rel);
+        a.download = rel.split("/").pop();
+        a.textContent = a.download;
+        const li = document.createElement("li");
+        li.append(a);
+        ul.append(li);
+      }
+      section.append(ul);
+    }
+    if (r.svgs.length) {
+      const render = document.createElement("div");
+      render.className = "render";
+      for (const rel of r.svgs) {
+        const img = document.createElement("img");
+        img.src = fileUrl(job, rel);
+        img.alt = `${ENGINE_NAMES[name]} render, ${rel.split("/").pop()}`;
+        img.loading = "lazy";
+        render.append(img);
+      }
+      section.append(render);
+    }
+    return section;
+  }));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+[project]
+name = "music-scan"
+version = "0.1.0"
+description = "Proof of concept: PDF sheet music to MusicXML with local OMR engines"
+readme = "README.md"
+authors = [
+    { name = "Bradley Harris", email = "bradleykh@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.0",
+    "homr>=0.7.0",
+    "music21>=10.5.2",
+    "onnxruntime-gpu[cuda,cudnn]>=1.31",
+    "pymupdf>=2.0",
+    "python-multipart>=0.0.32",
+    "uvicorn>=0.54.0",
+    "verovio>=6.3.0",
+]
+
+[project.scripts]
+music-scan = "music_scan.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+# homr pins the CPU onnxruntime, which clashes with onnxruntime-gpu.
+override-dependencies = ["onnxruntime; sys_platform == 'never'"]
+# nvidia-cublas ships Linux wheels only for some versions; resolve for this machine.
+required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
