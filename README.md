@@ -66,7 +66,8 @@ uv run --offline scorn reconcile score.pdf score.mxl
 # Drop the PDF's page and system breaks so the notation program lays the score out itself
 uv run --offline scorn scan score.pdf --no-page-breaks
 
-# Run the test suite (corpus tests skip unless SCORN_SCORES points at a score folder)
+# Run the test suite (corpus tests skip unless SCORN_SCORES points at a score folder;
+# full-score tests skip unless the Stopford score and its scans are in notes/stopford/)
 uv run --offline pytest
 
 # Build the ground-truth fixtures (clean and simulated-scan PDFs from known scores)
@@ -158,7 +159,7 @@ Known limits, with what they cost on the corpus:
 
 ### Proofreading against the PDF
 
-The rhythm check proves every bar adds up; only a side-by-side read proves the bars say what the PDF says. `reconcile` does the deterministic part of that read for born-digital PDFs, so proofreading is the final check on its output and the full job for everything else. On the Stopford full score, a MusicXML that passed the rhythm check still had instruments changing parts mid-piece, wrong notes, dropped ties, and about 150 spurious markings. A measure-by-measure read against the PDF found all of them.
+The rhythm check proves every bar adds up; only a side-by-side read proves the bars say what the PDF says. `reconcile` does the deterministic part of that read for born-digital PDFs, so proofreading is the final check on its output and the full job for everything else. On the Stopford full score (a 19-page condensed church score, copyrighted and so not included in `examples/`), a MusicXML that passed the rhythm check still had instruments changing parts mid-piece, wrong notes, dropped ties, and about 150 spurious markings. A measure-by-measure read against the PDF found all of them.
 
 **Keep the PDF's page breaks while proofreading.** Engraved with its encoded breaks, the MusicXML puts the same bars on each page as the PDF, so page N of one lines up with page N of the other. Edit and proofread the file with breaks, and strip them (`scan --no-page-breaks`) only as the last step before importing into a notation program.
 
@@ -250,7 +251,7 @@ Each fixture takes 15 to 50 seconds per engine, with homr on the GPU at about 10
 
 ## Real scores
 
-Three born-digital PDFs, with no ground truth, checked by eye against the `--render` output.
+Born-digital PDFs with no ground truth, checked by eye against the `--render` output. The two horn parts are in `examples/`; the Stopford full score is copyrighted and not included.
 
 | Score | Audiveris | homr |
 | --- | --- | --- |
