@@ -14,7 +14,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 
 import scorn
-from scorn import layout, mei, procs, rhythm, simple
+from scorn import layout, mei, procs, rhythm, simple, update
 from scorn.engines import audiveris as audiveris_engine
 from scorn.engines import available, get_engine
 
@@ -345,9 +345,26 @@ def create_app(root: Path, publish_dir: Path | None = None) -> FastAPI:
     def dev() -> FileResponse:
         return FileResponse(DEV_PAGE)
 
+    @app.get("/favicon.ico")
+    def favicon() -> FileResponse:
+        return FileResponse(STATIC / "scorn.ico", media_type="image/x-icon")
+
     @app.get("/api/version")
     def version() -> dict:
         return {"version": scorn.__version__}
+
+    release_lock = threading.Lock()
+    release: list[dict | None] = []
+
+    @app.get("/api/update")
+    def update_check() -> dict:
+        # Looked up on first request only; later requests reuse the answer even if it was a failure.
+        with release_lock:
+            if not release:
+                release.append(update.latest_release())
+        latest = release[0]
+        newer = latest is not None and update.is_newer(latest["version"], scorn.__version__)
+        return {"newer": newer, "latest": latest["version"] if latest else None, "url": latest["url"] if latest else None}
 
     @app.post("/api/heartbeat", status_code=204)
     def heartbeat() -> Response:

@@ -264,4 +264,11 @@ Born-digital PDFs with no ground truth, checked by eye against the `--render` ou
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+Scorn is licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later), see [LICENSE](LICENSE). The Windows desktop bundle distributes Audiveris and runs PyMuPDF in-process, and both are AGPL-3.0, so the AGPL applies to the combined work.
+
+Third-party components bundled with the desktop app:
+
+- [Audiveris](https://github.com/Audiveris/audiveris), AGPL-3.0
+- [PyMuPDF](https://github.com/pymupdf/PyMuPDF), AGPL-3.0
+- [Verovio](https://github.com/rism-digital/verovio), LGPL-3.0
+- [Python](https://docs.python.org/3/license.html), PSF License

@@ -146,6 +146,16 @@ def test_pages_and_version(setup):
     assert client.get("/api/version").json() == {"version": web.scorn.__version__}
 
 
+def test_favicon_is_served_and_linked_from_both_pages(setup):
+    client, *_ = setup
+    icon = client.get("/favicon.ico")
+    assert icon.status_code == 200
+    assert icon.headers["content-type"] == "image/x-icon"
+    assert icon.content
+    assert b'href="/favicon.ico"' in client.get("/").content
+    assert b'href="/favicon.ico"' in client.get("/dev").content
+
+
 def test_heartbeat_updates_last_seen(setup):
     client, app, *_ = setup
     app.state.activity.last_seen = 0.0
@@ -364,3 +374,24 @@ def test_plain_reason_hides_internal_text():
     assert "image only" in web.plain_reason("no font draws noteheads")
     text = web.plain_reason("KeyError: 'P3' in align_systems")
     assert "KeyError" not in text and "align_systems" not in text
+
+
+def test_update_reports_newer_release_and_checks_once(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_latest():
+        calls.append(1)
+        return {"version": "99.0.0", "url": "https://example.test/release"}
+
+    monkeypatch.setattr(web.update, "latest_release", fake_latest)
+    monkeypatch.setattr(web.scorn, "__version__", "0.1.0")
+    client = Client(web.create_app(tmp_path / "jobs", tmp_path / "published"))
+    for _ in range(2):
+        assert client.get("/api/update").json() == {"newer": True, "latest": "99.0.0", "url": "https://example.test/release"}
+    assert len(calls) == 1
+
+
+def test_update_reports_nothing_when_no_release_found(tmp_path, monkeypatch):
+    monkeypatch.setattr(web.update, "latest_release", lambda: None)
+    client = Client(web.create_app(tmp_path / "jobs", tmp_path / "published"))
+    assert client.get("/api/update").json() == {"newer": False, "latest": None, "url": None}
