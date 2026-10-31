@@ -261,3 +261,7 @@ Born-digital PDFs with no ground truth, checked by eye against the `--render` ou
 
 - On both single-line horn parts the engines agree note for note, and the Mozart matches the PDF. Neither engine reads the "Horn (F)" label: both write a part named "Voice" with no `<transpose>`, so the MusicXML holds written pitch with nothing telling Cadence it sounds a fifth lower.
 - On the Stopford full score Audiveris keeps 15 parts at 75 to 76 measures each across the whole piece. homr's result is unusable: the score is condensed, so pages carry 10 to 15 staves as instruments drop in and out, and joining pages by staff order mixes parts up. It also reads three of the pages as a single 40-measure staff. Use Audiveris for multi-part scores.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
