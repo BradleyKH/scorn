@@ -3,8 +3,8 @@ import re
 import pymupdf
 import pytest
 
-from music_scan.reconcile import geometry, pdf_text
-from music_scan.reconcile.model import TextSpan
+from scorn.reconcile import geometry, pdf_text
+from scorn.reconcile.model import TextSpan
 
 
 @pytest.fixture(scope="module")

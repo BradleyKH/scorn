@@ -1,5 +1,5 @@
 [project]
-name = "music-scan"
+name = "scorn"
 version = "0.1.0"
 description = "Proof of concept: PDF sheet music to MusicXML with local OMR engines"
 readme = "README.md"
@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-music-scan = "music_scan.cli:main"
+scorn = "scorn.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.10.2,<0.11.0"]

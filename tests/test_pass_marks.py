@@ -4,9 +4,9 @@ from collections import Counter, defaultdict
 
 import pytest
 
-from music_scan import compare, mei, rhythm
-from music_scan.reconcile import align, pdf_score, pdf_text
-from music_scan.reconcile.passes import marks
+from scorn import compare, mei, rhythm
+from scorn.reconcile import align, pdf_score, pdf_text
+from scorn.reconcile.passes import marks
 
 
 def strip_marks(root: ET.Element) -> None:

@@ -2,20 +2,20 @@ from pathlib import Path
 
 import pytest
 
-import music_scan
-from music_scan import rhythm
+import scorn
+from scorn import rhythm
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 
 
 def test_package_imports():
-    assert music_scan.__name__ == "music_scan"
+    assert scorn.__name__ == "scorn"
 
 
 def test_clean_fixture_has_no_bar_errors():
     truth = FIXTURES / "melody.truth.musicxml"
     if not truth.exists():
-        pytest.skip("run `uv run --offline music-scan fixtures` first")
+        pytest.skip("run `uv run --offline scorn fixtures` first")
     assert rhythm.check(truth) == []
 
 

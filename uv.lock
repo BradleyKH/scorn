@@ -689,41 +689,6 @@ wheels = [
 ]
 
 [[package]]
-name = "music-scan"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "fastapi" },
-    { name = "homr" },
-    { name = "music21" },
-    { name = "onnxruntime-gpu", extra = ["cuda", "cudnn"] },
-    { name = "pymupdf" },
-    { name = "python-multipart" },
-    { name = "uvicorn" },
-    { name = "verovio" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastapi", specifier = ">=0.162.0" },
-    { name = "homr", specifier = ">=0.7.0" },
-    { name = "music21", specifier = ">=10.5.2" },
-    { name = "onnxruntime-gpu", extras = ["cuda", "cudnn"], specifier = ">=1.31" },
-    { name = "pymupdf", specifier = ">=2.0" },
-    { name = "python-multipart", specifier = ">=0.0.32" },
-    { name = "uvicorn", specifier = ">=0.54.0" },
-    { name = "verovio", specifier = ">=6.3.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.2.0" }]
-
-[[package]]
 name = "music21"
 version = "10.5.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1483,6 +1448,41 @@ sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179a
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0", size = 73075, upload-time = "2026-05-14T19:25:26.443Z" },
 ]
+
+[[package]]
+name = "scorn"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fastapi" },
+    { name = "homr" },
+    { name = "music21" },
+    { name = "onnxruntime-gpu", extra = ["cuda", "cudnn"] },
+    { name = "pymupdf" },
+    { name = "python-multipart" },
+    { name = "uvicorn" },
+    { name = "verovio" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.162.0" },
+    { name = "homr", specifier = ">=0.7.0" },
+    { name = "music21", specifier = ">=10.5.2" },
+    { name = "onnxruntime-gpu", extras = ["cuda", "cudnn"], specifier = ">=1.31" },
+    { name = "pymupdf", specifier = ">=2.0" },
+    { name = "python-multipart", specifier = ">=0.0.32" },
+    { name = "uvicorn", specifier = ">=0.54.0" },
+    { name = "verovio", specifier = ">=6.3.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.2.0" }]
 
 [[package]]
 name = "shapely"

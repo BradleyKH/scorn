@@ -32,9 +32,9 @@ def stopford_truth() -> Path:
 
 @pytest.fixture(scope="session")
 def scores_dir() -> Path:
-    path = Path(os.environ.get("MUSIC_SCAN_SCORES", Path.home() / "Dropbox" / "Scores"))
+    path = Path(os.environ.get("SCORN_SCORES", Path.home() / "Dropbox" / "Scores"))
     if not path.is_dir():
-        pytest.skip(f"score folder not found (set MUSIC_SCAN_SCORES): {path}")
+        pytest.skip(f"score folder not found (set SCORN_SCORES): {path}")
     return path
 
 
@@ -55,7 +55,7 @@ def stopford_raw() -> Path:
 
 @pytest.fixture(scope="session")
 def stopford_score(stopford_pdf):
-    from music_scan.reconcile import pdf_score
+    from scorn.reconcile import pdf_score
 
     return pdf_score.read_pdf(stopford_pdf)
 
@@ -63,13 +63,13 @@ def stopford_score(stopford_pdf):
 # Function-scoped: passes mutate the tree, so every test needs its own copy.
 @pytest.fixture
 def stopford_raw_tree(stopford_raw):
-    from music_scan import rhythm
+    from scorn import rhythm
 
     return rhythm.load(stopford_raw)
 
 
 @pytest.fixture
 def stopford_truth_tree(stopford_truth):
-    from music_scan import rhythm
+    from scorn import rhythm
 
     return rhythm.load(stopford_truth)

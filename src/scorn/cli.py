@@ -3,8 +3,8 @@ import shutil
 import time
 from pathlib import Path
 
-from music_scan import compare, fixtures, layout, mei, rhythm
-from music_scan.engines import ENGINES
+from scorn import compare, fixtures, layout, mei, rhythm
+from scorn.engines import ENGINES
 
 
 def _reconciled_path(xml: Path) -> Path:
@@ -19,7 +19,7 @@ def _report_path(out: Path) -> Path:
 
 
 def _reconcile(pdf: Path, xml: Path, out: Path, report_path: Path) -> None:
-    from music_scan.reconcile import reconcile
+    from scorn.reconcile import reconcile
 
     report = reconcile(pdf, xml, out)
     report_path.write_text(report.to_json(), encoding="utf-8", newline="")
@@ -90,14 +90,14 @@ def cmd_compare(args: argparse.Namespace) -> None:
 
 
 def cmd_eval(args: argparse.Namespace) -> None:
-    from music_scan import evaluate
+    from scorn import evaluate
 
     fn = None
     if args.reconcile:
         try:
-            from music_scan.reconcile import reconcile as fn
+            from scorn.reconcile import reconcile as fn
         except ImportError as e:
-            raise SystemExit(f"--reconcile could not load music_scan.reconcile: {e}")
+            raise SystemExit(f"--reconcile could not load scorn.reconcile: {e}")
     pairs = evaluate.discover(Path(args.folder).expanduser())
     if args.cls:
         pairs = [p for p in pairs if p.kind == args.cls]
@@ -119,7 +119,7 @@ def cmd_check(args: argparse.Namespace) -> None:
 
 
 def cmd_proof(args: argparse.Namespace) -> None:
-    from music_scan import proof
+    from scorn import proof
 
     xml = Path(args.musicxml)
     out = Path(args.out) if args.out else xml.parent / "proof"
@@ -130,15 +130,15 @@ def cmd_proof(args: argparse.Namespace) -> None:
 def cmd_ui(args: argparse.Namespace) -> None:
     import uvicorn
 
-    from music_scan import web
+    from scorn import web
 
     app = web.create_app(Path(args.out).resolve() / "ui")
-    print(f"music-scan UI at http://127.0.0.1:{args.port}")
+    print(f"scorn UI at http://127.0.0.1:{args.port}")
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="music-scan", description="PDF to MusicXML POC")
+    parser = argparse.ArgumentParser(prog="scorn", description="PDF to MusicXML POC")
     sub = parser.add_subparsers(required=True)
 
     scan = sub.add_parser("scan", help="Recognize a PDF into MusicXML")
@@ -177,7 +177,7 @@ def main() -> None:
     ev.add_argument("folder")
     ev.add_argument("--limit", type=int, help="Only the first N pairs in sorted path order")
     ev.add_argument("--class", dest="cls", choices=["vector-music", "outlined", "scan", "other"])
-    ev.add_argument("--reconcile", action="store_true", help="Also score music_scan.reconcile output")
+    ev.add_argument("--reconcile", action="store_true", help="Also score scorn.reconcile output")
     ev.add_argument("--out", default="out")
     ev.set_defaults(func=cmd_eval)
 

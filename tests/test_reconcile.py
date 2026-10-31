@@ -6,9 +6,9 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from music_scan import compare, rhythm
-from music_scan.reconcile import Report, align, reconcile
-from music_scan.reconcile.report import failing_bars
+from scorn import compare, rhythm
+from scorn.reconcile import Report, align, reconcile
+from scorn.reconcile.report import failing_bars
 
 # (instrument, staff, bar) whose notes still differ from the hand-corrected file after the chain.
 RESIDUALS = {

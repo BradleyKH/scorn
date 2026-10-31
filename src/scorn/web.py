@@ -8,8 +8,8 @@ from typing import Annotated
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
-from music_scan import layout, mei
-from music_scan.engines import ENGINES
+from scorn import layout, mei
+from scorn.engines import ENGINES
 
 INDEX = Path(__file__).parent / "static" / "index.html"
 
@@ -72,7 +72,7 @@ def plain_reason(reason: str) -> str:
 
 def reconcile_xml(job: Job, xml: Path, result: Movement) -> Path:
     """Return the file to publish, recording the summary and links on result. Never raises."""
-    from music_scan.reconcile import reconcile
+    from scorn.reconcile import reconcile
 
     fixed = xml.with_name(xml.name.split(".")[0] + ".reconciled.musicxml")
     try:

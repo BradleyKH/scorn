@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pymupdf
 
-from music_scan.reconcile.glyphs import document_fonts, normalize, page_glyphs
+from scorn.reconcile.glyphs import document_fonts, normalize, page_glyphs
 
 BOX = 40.0
 CELL = 64.0

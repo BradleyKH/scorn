@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from music_scan import rhythm
+from scorn import rhythm
 
 # Imported as a module: binding the function would shadow the `align` submodule on this package.
 from . import align as alignment

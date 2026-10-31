@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pymupdf
 
-from music_scan.reconcile.geometry import read_geometry
+from scorn.reconcile.geometry import read_geometry
 
 COLORS = {
     "staff": (0.1, 0.3, 1.0),

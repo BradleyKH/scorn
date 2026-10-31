@@ -2,11 +2,11 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from music_scan import rhythm
-from music_scan.reconcile import align
-from music_scan.reconcile.align import ChangeLog
-from music_scan.reconcile.passes import text
-from music_scan.reconcile.pdf_text import Syllable
+from scorn import rhythm
+from scorn.reconcile import align
+from scorn.reconcile.align import ChangeLog
+from scorn.reconcile.passes import text
+from scorn.reconcile.pdf_text import Syllable
 
 
 def _run(root, score):
@@ -194,7 +194,7 @@ def test_two_lyric_rows_stay_verses_when_voices_share_a_rhythm_or_there_is_one_v
 
 
 def test_metronome_element_carries_parentheses():
-    from music_scan.reconcile.pdf_text import TempoMark
+    from scorn.reconcile.pdf_text import TempoMark
 
     mark = TempoMark(0, 0, 0, "Slowly", "quarter", 0, 64.0, 0.0, 0.0, parenthesized=True)
     assert text._metronome_el(mark).get("parentheses") == "yes"

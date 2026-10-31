@@ -8,9 +8,9 @@ from collections import defaultdict
 
 import pytest
 
-from music_scan import rhythm
-from music_scan.reconcile import align
-from music_scan.reconcile.passes import pitch
+from scorn import rhythm
+from scorn.reconcile import align
+from scorn.reconcile.passes import pitch
 
 STEPS = "CDEFGAB"
 
@@ -201,7 +201,7 @@ def test_time_signature_wrong_and_spurious_are_corrected(stopford_score, stopfor
 def test_cross_octave_accidental_is_left_to_the_scan():
     from types import SimpleNamespace
 
-    from music_scan.reconcile.pdf_notes import Note
+    from scorn.reconcile.pdf_notes import Note
 
     def note(octave, alter, acc, x):
         return Note("B", octave, alter, acc, 0.0, x, 0.0, "black")

@@ -1,4 +1,4 @@
-# music-scan-test
+# Scorn
 
 Proof of concept: turn a PDF of sheet music into MusicXML with optical music recognition (OMR) that runs entirely on this machine. The output is the MusicXML that Cadence's score dialog already accepts, and `--mei` also converts it to MEI the same way the dialog does (Verovio `loadData` then `getMEI`).
 
@@ -14,7 +14,7 @@ Once setup has run, everything works without internet: both engines, their model
 1. **Pass `--offline` to uv**, or set `UV_OFFLINE=1` for the shell, so `uv run` never tries to reach PyPI:
 
    ```bash
-   uv run --offline music-scan scan path/to/score.pdf --engine audiveris homr
+   uv run --offline scorn scan path/to/score.pdf --engine audiveris homr
    ```
 
 2. **Don't delete or recreate `.venv`.** It is about 2.6 GB, most of it the NVIDIA CUDA and cuDNN libraries. homr's models (about 320 MB, CPU and GPU weights plus OCR) are downloaded into `.venv/Lib/site-packages/homr/` and `.venv/Lib/site-packages/rapidocr/models/`. A fresh venv needs the internet for both the packages and the models.
@@ -37,7 +37,7 @@ uv run python -c "import sys; sys.argv=['homr','--init']; from homr.main import 
 
 homr runs on an NVIDIA GPU through `onnxruntime-gpu` 1.31 (CUDA 13), with the CUDA and cuDNN DLLs installed from pip (about 1 GB), so no CUDA toolkit install is needed, only a recent driver. `pyproject.toml` overrides homr's CPU `onnxruntime` away, since the two packages install into the same folder and clash. homr picks fp16 GPU weights when CUDA is available, which is why `--init` must run after the GPU package is in place.
 
-On Windows the pip DLLs are only found after `onnxruntime.preload_dlls()`, which the homr launcher in `src/music_scan/engines/homr.py` calls. Without it homr still sees CUDA in the provider list, and its sessions fall back to the CPU with only a "Failed to create CUDAExecutionProvider" line in `homr.log`.
+On Windows the pip DLLs are only found after `onnxruntime.preload_dlls()`, which the homr launcher in `src/scorn/engines/homr.py` calls. Without it homr still sees CUDA in the provider list, and its sessions fall back to the CPU with only a "Failed to create CUDAExecutionProvider" line in `homr.log`.
 
 To check the GPU is in use:
 
@@ -53,34 +53,34 @@ To use an Audiveris that's installed elsewhere, set `AUDIVERIS_EXE` to its `Audi
 
 ```bash
 # Recognize a PDF with one or both engines
-uv run --offline music-scan scan score.pdf --engine audiveris homr --mei --render
+uv run --offline scorn scan score.pdf --engine audiveris homr --mei --render
 
 # Skip the correction from the PDF that Audiveris output otherwise gets
-uv run --offline music-scan scan score.pdf --no-reconcile
+uv run --offline scorn scan score.pdf --no-reconcile
 
 # Correct Audiveris MusicXML from the PDF it came from (born-digital PDFs only)
-uv run --offline music-scan reconcile score.pdf score.mxl
+uv run --offline scorn reconcile score.pdf score.mxl
 
 # Drop the PDF's page and system breaks so the notation program lays the score out itself
-uv run --offline music-scan scan score.pdf --no-page-breaks
+uv run --offline scorn scan score.pdf --no-page-breaks
 
-# Run the test suite (corpus tests skip unless MUSIC_SCAN_SCORES points at a score folder)
+# Run the test suite (corpus tests skip unless SCORN_SCORES points at a score folder)
 uv run --offline pytest
 
 # Build the ground-truth fixtures (clean and simulated-scan PDFs from known scores)
-uv run --offline music-scan fixtures
+uv run --offline scorn fixtures
 
 # Scan a fixture and score it against the truth
-uv run --offline music-scan scan fixtures/melody.scanned.pdf --engine homr --truth fixtures/melody.truth.musicxml
+uv run --offline scorn scan fixtures/melody.scanned.pdf --engine homr --truth fixtures/melody.truth.musicxml
 
 # Score any MusicXML against any other
-uv run --offline music-scan compare truth.musicxml found.mxl
+uv run --offline scorn compare truth.musicxml found.mxl
 
 # List bars whose voices don't add up to the time signature
-uv run --offline music-scan check found.mxl
+uv run --offline scorn check found.mxl
 
 # Stack each PDF page over the engraved MusicXML, half a page per image, for proofreading
-uv run --offline music-scan proof score.pdf found.musicxml
+uv run --offline scorn proof score.pdf found.musicxml
 ```
 
 ### Rhythm check
@@ -96,7 +96,7 @@ The check can't catch a misread that still adds up, such as a wrong pitch, or a 
 ### Reconcile
 
 ```bash
-uv run --offline music-scan reconcile score.pdf score.mxl [--out fixed.musicxml] [--report changes.json]
+uv run --offline scorn reconcile score.pdf score.mxl [--out fixed.musicxml] [--report changes.json]
 ```
 
 `reconcile` corrects Audiveris MusicXML using the PDF as the authority. It reads the PDF once, with no OCR, rebuilds a score model from the notation drawn in it (glyphs from `page.get_text("rawdict")`, lines and curves from `page.get_drawings()`), aligns that model to the MusicXML bar by bar and staff by staff, and rewrites what the PDF proves. Audiveris's bar structure is kept as the skeleton. Passes run in a fixed order and each fixes one kind of misread:
@@ -122,7 +122,7 @@ Outputs:
 
 ### Reconcile results
 
-`music-scan eval ~/Dropbox/Scores --class vector-music --reconcile` scans every born-digital PDF in the corpus that has a MusicXML exported from the same notation file, then scores raw Audiveris and reconciled output against that MusicXML. Of 163 such pairs, Audiveris fails on 3 ("No regularly spaced lines found"), 3 more cannot be scored (see the limits below), and 5 have stale truth: the MusicXML was exported from a different version of the score than the PDF ("Bread of Heaven", "rhythm exercises", "imagine", "Handel - Eternal Source of Light Divine", "happy birthday - brass"). The report lists those 5 separately and leaves them out of the totals and the regression list. The totals cover the remaining 152 files.
+`scorn eval ~/Dropbox/Scores --class vector-music --reconcile` scans every born-digital PDF in the corpus that has a MusicXML exported from the same notation file, then scores raw Audiveris and reconciled output against that MusicXML. Of 163 such pairs, Audiveris fails on 3 ("No regularly spaced lines found"), 3 more cannot be scored (see the limits below), and 5 have stale truth: the MusicXML was exported from a different version of the score than the PDF ("Bread of Heaven", "rhythm exercises", "imagine", "Handel - Eternal Source of Light Divine", "happy birthday - brass"). The report lists those 5 separately and leaves them out of the totals and the regression list. The totals cover the remaining 152 files.
 
 | Measure | Raw Audiveris | Reconciled |
 | --- | ---: | ---: |
@@ -161,10 +161,10 @@ The rhythm check proves every bar adds up; only a side-by-side read proves the b
 **Keep the PDF's page breaks while proofreading.** Engraved with its encoded breaks, the MusicXML puts the same bars on each page as the PDF, so page N of one lines up with page N of the other. Edit and proofread the file with breaks, and strip them (`scan --no-page-breaks`) only as the last step before importing into a notation program.
 
 ```bash
-uv run --offline music-scan proof score.pdf score.musicxml   # images in proof/ next to the MusicXML
+uv run --offline scorn proof score.pdf score.musicxml   # images in proof/ next to the MusicXML
 ```
 
-`proof` engraves the MusicXML with Verovio (encoded breaks, a number over every bar), rasterizes each SVG with headless Chrome or Edge (set `MUSIC_SCAN_BROWSER` to use another Chromium browser), and writes `pNN-top.png` and `pNN-bot.png` for every page. Each image shows half a page of the PDF above a red bar and the same half of the engraving below it, both at 2000 px wide, which is enough to read every note on a 15-staff page. The halves overlap by about 10% so no staff is cut in two. `proof/svg/` keeps the full engraved pages.
+`proof` engraves the MusicXML with Verovio (encoded breaks, a number over every bar), rasterizes each SVG with headless Chrome or Edge (set `SCORN_BROWSER` to use another Chromium browser), and writes `pNN-top.png` and `pNN-bot.png` for every page. Each image shows half a page of the PDF above a red bar and the same half of the engraving below it, both at 2000 px wide, which is enough to read every note on a 15-staff page. The halves overlap by about 10% so no staff is cut in two. `proof/svg/` keeps the full engraved pages.
 
 How to read the images:
 
@@ -192,7 +192,7 @@ After fixing, prove the fix touched only what it meant to: compare each instrume
 ### Web page
 
 ```bash
-uv run --offline music-scan ui   # http://127.0.0.1:8000, --port to change
+uv run --offline scorn ui   # http://127.0.0.1:8000, --port to change
 ```
 
 Pick or drop a PDF, choose the engines, and optionally MEI and a rendered preview. Clear "Keep the PDF's page breaks" to get MusicXML without the source's page and system breaks. Scans run one at a time in the background while the page shows which engine is working and the elapsed time. As each engine finishes, the page shows download links for its MusicXML (and MEI) and the Verovio render. Each upload's files land in `out/ui/<job id>/<engine>/`, laid out like the CLI output below. Jobs are kept only in memory, so a restarted server forgets them, but their files stay on disk.
@@ -205,13 +205,13 @@ Output lands in `out/<pdf name>/<engine>/`:
 | `<name>.homr.musicxml` | homr's pages joined into one score |
 | `*.mei` | with `--mei`, the MEI Cadence would store |
 | `render/page-NNN.svg` | with `--render`, the recognized score engraved by Verovio, to compare by eye with the PDF |
-| `proof/pNN-top.png`, `proof/pNN-bot.png` | from `music-scan proof`, each half page of the PDF stacked over the same half of the engraving |
+| `proof/pNN-top.png`, `proof/pNN-bot.png` | from `scorn proof`, each half page of the PDF stacked over the same half of the engraving |
 | `audiveris.log`, `homr.log` | engine output, the first stop when a scan fails |
 | `homr/page-NNN.png` | the rasterized pages homr read |
 
 ## Fixtures and scoring
 
-`music-scan fixtures` takes three pieces from the music21 corpus, writes each as ground-truth MusicXML, engraves it to an A4 PDF with Verovio, and makes a "scanned" copy: 200 dpi JPEG pages with a slight skew, blur, gray cast, and noise.
+`scorn fixtures` takes three pieces from the music21 corpus, writes each as ground-truth MusicXML, engraves it to an A4 PDF with Verovio, and makes a "scanned" copy: 200 dpi JPEG pages with a slight skew, blur, gray cast, and noise.
 
 | Fixture | Source | Shape |
 | --- | --- | --- |

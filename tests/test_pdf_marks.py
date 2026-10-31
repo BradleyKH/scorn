@@ -3,8 +3,8 @@ from collections import Counter
 import pymupdf
 import pytest
 
-from music_scan.reconcile import geometry, glyphs, pdf_marks
-from music_scan.reconcile.model import Staff
+from scorn.reconcile import geometry, glyphs, pdf_marks
+from scorn.reconcile.model import Staff
 
 
 @pytest.fixture(scope="module")

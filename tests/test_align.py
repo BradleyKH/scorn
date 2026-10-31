@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from music_scan import rhythm
-from music_scan.reconcile import align, pdf_score
-from music_scan.reconcile.pdf_notes import Event, Note
+from scorn import rhythm
+from scorn.reconcile import align, pdf_score
+from scorn.reconcile.pdf_notes import Event, Note
 
 ROOT = Path(__file__).resolve().parent.parent
 STOPFORD_RAW = (

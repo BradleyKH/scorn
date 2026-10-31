@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from music_scan import rhythm
-from music_scan.reconcile import align, instruments, pdf_score
-from music_scan.reconcile.passes import parts
+from scorn import rhythm
+from scorn.reconcile import align, instruments, pdf_score
+from scorn.reconcile.passes import parts
 
 ROOT = Path(__file__).resolve().parent.parent
 MOZART_PDF = ROOT / "examples" / "A Tune By Mozart Horn (F).pdf"

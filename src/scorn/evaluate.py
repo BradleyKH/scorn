@@ -11,8 +11,8 @@ from typing import Callable
 
 import pymupdf
 
-from music_scan import compare
-from music_scan.engines import audiveris
+from scorn import compare
+from scorn.engines import audiveris
 
 CLASSES = ("vector-music", "outlined", "scan", "other")
 TRUTH_SUFFIXES = (".mxl", ".musicxml", ".xml")

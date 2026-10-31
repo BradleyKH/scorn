@@ -3,11 +3,11 @@ from dataclasses import replace
 import pymupdf
 import pytest
 
-from music_scan import rhythm
-from music_scan.reconcile import align, pdf_notes, pdf_score
-from music_scan.reconcile.geometry import read_geometry
-from music_scan.reconcile.glyphs import Glyph, GlyphClass, document_fonts, page_glyphs
-from music_scan.reconcile.model import Line
+from scorn import rhythm
+from scorn.reconcile import align, pdf_notes, pdf_score
+from scorn.reconcile.geometry import read_geometry
+from scorn.reconcile.glyphs import Glyph, GlyphClass, document_fonts, page_glyphs
+from scorn.reconcile.model import Line
 
 
 @pytest.fixture(scope="module")

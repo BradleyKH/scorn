@@ -4,7 +4,7 @@ from pathlib import Path
 
 from music21 import converter, stream
 
-from music_scan.pdf import rasterize
+from scorn.pdf import rasterize
 
 
 def scan(pdf: Path, out_dir: Path) -> list[Path]:

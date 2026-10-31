@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from music_scan import rhythm
+from scorn import rhythm
 
 from .align import Change, measure_sort_key
 

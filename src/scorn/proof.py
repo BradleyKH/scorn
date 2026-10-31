@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pymupdf
 
-from music_scan.mei import toolkit
+from scorn.mei import toolkit
 
 BROWSERS = [
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -18,11 +18,11 @@ DIVIDER = (220, 0, 0)
 
 
 def find_browser() -> str:
-    for candidate in [os.environ.get("MUSIC_SCAN_BROWSER"), *BROWSERS,
+    for candidate in [os.environ.get("SCORN_BROWSER"), *BROWSERS,
                       shutil.which("chrome"), shutil.which("msedge"), shutil.which("chromium")]:
         if candidate and Path(candidate).exists():
             return candidate
-    raise RuntimeError("No Chrome or Edge found; set MUSIC_SCAN_BROWSER to a Chromium-based browser")
+    raise RuntimeError("No Chrome or Edge found; set SCORN_BROWSER to a Chromium-based browser")
 
 
 def render_pages(musicxml: Path, out_dir: Path) -> list[Path]:

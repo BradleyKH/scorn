@@ -1,4 +1,4 @@
-from music_scan.engines import audiveris, homr
+from scorn.engines import audiveris, homr
 
 ENGINES = {
     "audiveris": audiveris.scan,

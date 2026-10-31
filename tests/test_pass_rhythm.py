@@ -1,9 +1,9 @@
 import copy
 import xml.etree.ElementTree as ET
 
-from music_scan import rhythm
-from music_scan.reconcile import align
-from music_scan.reconcile.passes import rhythm_fix
+from scorn import rhythm
+from scorn.reconcile import align
+from scorn.reconcile.passes import rhythm_fix
 
 
 def _measure(root: ET.Element, part: str, number: str) -> ET.Element:

@@ -1,6 +1,6 @@
 from collections import Counter
 
-from music_scan.reconcile.glyphs import Charmap, Encoding, GlyphClass, classify, detect_font
+from scorn.reconcile.glyphs import Charmap, Encoding, GlyphClass, classify, detect_font
 
 
 def test_ghostscript_maestro_with_pp_stays_macroman_sonata():

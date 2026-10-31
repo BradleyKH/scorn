@@ -5,10 +5,10 @@ import pymupdf
 import pytest
 from music21 import converter
 
-from music_scan import compare
-from music_scan.reconcile import pdf_notes
-from music_scan.reconcile.geometry import read_geometry
-from music_scan.reconcile.glyphs import document_fonts, page_glyphs
+from scorn import compare
+from scorn.reconcile import pdf_notes
+from scorn.reconcile.geometry import read_geometry
+from scorn.reconcile.glyphs import document_fonts, page_glyphs
 
 
 @pytest.fixture(scope="module")
@@ -125,7 +125,7 @@ def test_corpus_ghostscript_hatched_beams(scores_dir: Path, stem: str):
 
 
 def test_hatch_strokes_merge_into_one_beam():
-    from music_scan.reconcile.geometry import _merge_hatches, _Seg
+    from scorn.reconcile.geometry import _merge_hatches, _Seg
 
     stack = [_Seg(100.0, 50 + 0.12 * i, 124.0, 51.3 + 0.12 * i, 0.12) for i in range(21)]
     separate = [_Seg(100.0, 54 + 0.12 * i, 124.0, 55.3 + 0.12 * i, 0.12) for i in range(21)]
