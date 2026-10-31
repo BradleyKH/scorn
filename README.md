@@ -33,9 +33,11 @@ uv run python -c "import sys; sys.argv=['homr','--init']; from homr.main import 
                                  # downloads homr's recognition and OCR models
 ```
 
+`uv sync` installs everything for development. The package's own dependencies are the core: Audiveris plus reconcile (pymupdf, verovio, and the web UI). homr with the GPU packages and music21 come from the `homr` and `eval` dependency groups, which uv installs by default. `uv export --no-default-groups` lists the core alone. Without homr installed, the `homr` engine isn't offered; without music21, `scorn compare`, `scorn fixtures`, `scorn eval` and `--truth` fail.
+
 ### GPU
 
-homr runs on an NVIDIA GPU through `onnxruntime-gpu` 1.31 (CUDA 13), with the CUDA and cuDNN DLLs installed from pip (about 1 GB), so no CUDA toolkit install is needed, only a recent driver. `pyproject.toml` overrides homr's CPU `onnxruntime` away, since the two packages install into the same folder and clash. homr picks fp16 GPU weights when CUDA is available, which is why `--init` must run after the GPU package is in place.
+homr runs on an NVIDIA GPU through `onnxruntime-gpu` 1.31 (CUDA 13), with the CUDA and cuDNN DLLs installed from pip (about 1 GB), so no CUDA toolkit install is needed, only a recent driver. `pyproject.toml` overrides `onnxruntime` out of the whole resolution: homr's CPU build clashes with `onnxruntime-gpu`, since the two install into the same folder, and pymupdf 2.0 requires it too, so the override is also what keeps it out of the core. homr picks fp16 GPU weights when CUDA is available, which is why `--init` must run after the GPU package is in place.
 
 On Windows the pip DLLs are only found after `onnxruntime.preload_dlls()`, which the homr launcher in `src/scorn/engines/homr.py` calls. Without it homr still sees CUDA in the provider list, and its sessions fall back to the CPU with only a "Failed to create CUDAExecutionProvider" line in `homr.log`.
 
@@ -45,7 +47,7 @@ To check the GPU is in use:
 uv run --offline python -c "import onnxruntime as o; o.preload_dlls(); print(o.get_available_providers())"
 ```
 
-To run on a machine without an NVIDIA GPU, remove `onnxruntime-gpu` from the dependencies and the `[tool.uv]` block from `pyproject.toml`, then `uv sync` and rerun `--init` while online; homr goes back to the CPU `onnxruntime` and its fp32 weights.
+To run homr on a machine without an NVIDIA GPU, edit `pyproject.toml`: in the `homr` group, replace `onnxruntime-gpu[cuda,cudnn]>=1.31` with `onnxruntime>=1.24.1`, and delete the `override-dependencies` line, keeping the rest of `[tool.uv]`. Then `uv sync` and rerun `--init` while online; homr uses the CPU `onnxruntime` and its fp32 weights. uv can't limit an override to one dependency group, so with that line gone the core carries `onnxruntime` too (pymupdf pulls it in, and `uv export --no-default-groups` lists it); build the core from the unedited `pyproject.toml`.
 
 To use an Audiveris that's installed elsewhere, set `AUDIVERIS_EXE` to its `Audiveris.exe`.
 
@@ -192,16 +194,26 @@ After fixing, prove the fix touched only what it meant to: compare each instrume
 ### Web page
 
 ```bash
-uv run --offline scorn ui   # http://127.0.0.1:8000, --port to change
+uv run --offline python -m scorn.app   # opens the simple page in your browser
 ```
 
-Pick or drop a PDF, choose the engines, and optionally MEI and a rendered preview. Clear "Keep the PDF's page breaks" to get MusicXML without the source's page and system breaks. Scans run one at a time in the background while the page shows which engine is working and the elapsed time. As each engine finishes, the page shows download links for its MusicXML (and MEI) and the Verovio render. Each upload's files land in `out/ui/<job id>/<engine>/`, laid out like the CLI output below. Jobs are kept only in memory, so a restarted server forgets them, but their files stay on disk.
+The simple page at `/` takes a PDF and returns its MusicXML; the installed app's Start menu shortcut runs this same command with `pythonw.exe`. The developer page at `/dev` exposes the full set of options: pick or drop a PDF, choose the engines, and optionally MEI and a rendered preview. On `/dev`, clear "Keep the PDF's page breaks" to get MusicXML without the source's page and system breaks. Scans run one at a time in the background while the page shows which engine is working and the elapsed time. As each engine finishes, `/dev` shows download links for its MusicXML (and MEI) and the Verovio render. Jobs are kept only in memory, so a restarted server forgets them, but their files stay on disk.
+
+`python -m scorn.app` runs the server in the same process:
+
+- **Port:** a free port on 127.0.0.1 chosen at each start, so nothing needs configuring.
+- **Single instance:** `app.json` in the state folder records the running server's pid and port. A second launch that finds that server answering opens the browser at it and exits; a lock left by a crashed run is taken over.
+- **Idle exit:** the page sends a heartbeat while it is open. The server exits after 120 seconds with no page open and no scan or proof running, and removes `app.json`.
+- **Files:** state lives in `%LOCALAPPDATA%\Scorn\`: working folders in `jobs\`, the log in `scorn.log` (the only log output, since `pythonw.exe` has no console), and `app.json`. Finished results are published to `Scorn\` inside the real Documents folder, even when OneDrive redirects it.
+- **Flags:** `--no-browser`, `--idle-seconds N`, `--state-dir PATH`, `--publish-dir PATH`.
+
+For development, `uv run --offline scorn ui` serves the same pages on a fixed port (`--port`, default 8000) with job folders under `out/ui/<job id>/` and results in `out/ui/published/`.
 
 Output lands in `out/<pdf name>/<engine>/`:
 
 | File | What it is |
 | --- | --- |
-| `audiveris/<name>.mxl` | Audiveris's compressed MusicXML (one `.mvtN.mxl` per movement when it finds several) |
+| `<name>.mxl` | Audiveris's compressed MusicXML (one `.mvtN.mxl` per movement when it finds several) |
 | `<name>.homr.musicxml` | homr's pages joined into one score |
 | `*.mei` | with `--mei`, the MEI Cadence would store |
 | `render/page-NNN.svg` | with `--render`, the recognized score engraved by Verovio, to compare by eye with the PDF |

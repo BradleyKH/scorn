@@ -4,6 +4,7 @@ from pathlib import Path
 
 from music21 import converter, stream
 
+from scorn import procs
 from scorn.pdf import rasterize
 
 
@@ -19,7 +20,7 @@ def scan(pdf: Path, out_dir: Path) -> list[Path]:
             # falls back to the CPU while still reporting CUDA as available.
             launcher = "import onnxruntime; onnxruntime.preload_dlls(); from homr.main import main; main()"
             cmd = [sys.executable, "-c", launcher, str(image)]
-            result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
+            result = procs.run(cmd, stdout=f, stderr=subprocess.STDOUT)
             if result.returncode != 0:
                 raise RuntimeError(f"homr failed on {image.name}; see {log}")
 

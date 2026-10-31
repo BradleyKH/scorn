@@ -3,13 +3,12 @@ import shutil
 import time
 from pathlib import Path
 
-from scorn import compare, fixtures, layout, mei, rhythm
-from scorn.engines import ENGINES
+from scorn import __version__, layout, mei, rhythm, simple
+from scorn.engines import available, get_engine
 
 
 def _reconciled_path(xml: Path) -> Path:
-    # Keeps any ".mvtN" so movements don't overwrite each other, and the first-dot stem
-    # (which mei.mei_path and the render folder rely on) stays the input's.
+    # Keeps any ".mvtN" so movements don't overwrite each other.
     return xml.with_name(xml.name.removesuffix(xml.suffix) + ".reconciled.musicxml")
 
 
@@ -24,6 +23,8 @@ def _reconcile(pdf: Path, xml: Path, out: Path, report_path: Path) -> None:
     report = reconcile(pdf, xml, out)
     report_path.write_text(report.to_json(), encoding="utf-8", newline="")
     print(report.summary())
+    if not report.applicable:
+        print(f"  reason    {report.reason}")
     print(f"  report    {report_path}")
 
 
@@ -44,7 +45,7 @@ def cmd_scan(args: argparse.Namespace) -> None:
             shutil.rmtree(out_dir)
         print(f"[{engine}] scanning {pdf.name}")
         started = time.perf_counter()
-        results = ENGINES[engine](pdf, out_dir)
+        results = get_engine(engine)(pdf, out_dir)
         print(f"[{engine}] done in {time.perf_counter() - started:.1f}s")
         if engine == "audiveris" and not args.no_reconcile:
             for i, raw in enumerate(results):
@@ -69,14 +70,20 @@ def cmd_scan(args: argparse.Namespace) -> None:
                 mei.to_mei(xml, mei_path)
                 print(f"  mei       {mei_path}")
             if args.render:
-                svgs = mei.to_svg(xml, out_dir / "render")
-                print(f"  render    {len(svgs)} SVG page(s) in {out_dir / 'render'}")
+                # Audiveris can export several movements, so each gets its own render folder.
+                render_dir = out_dir / "render" / simple.movement_name(xml)
+                svgs = mei.to_svg(xml, render_dir)
+                print(f"  render    {len(svgs)} SVG page(s) in {render_dir}")
         if args.truth:
+            from scorn import compare
+
             print(compare.compare(Path(args.truth), results[0]).format())
         print()
 
 
 def cmd_fixtures(args: argparse.Namespace) -> None:
+    from scorn import fixtures
+
     for name in args.names or fixtures.PIECES:
         if name not in fixtures.PIECES:
             raise SystemExit(f"unknown fixture {name!r}")
@@ -86,6 +93,8 @@ def cmd_fixtures(args: argparse.Namespace) -> None:
 
 
 def cmd_compare(args: argparse.Namespace) -> None:
+    from scorn import compare
+
     print(compare.compare(Path(args.truth), Path(args.found)).format())
 
 
@@ -133,17 +142,18 @@ def cmd_ui(args: argparse.Namespace) -> None:
     from scorn import web
 
     app = web.create_app(Path(args.out).resolve() / "ui")
-    print(f"scorn UI at http://127.0.0.1:{args.port}")
+    print(f"scorn UI at http://127.0.0.1:{args.port} (developer page at /dev)")
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning")
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="scorn", description="PDF to MusicXML POC")
+    parser.add_argument("--version", action="version", version=f"scorn {__version__}")
     sub = parser.add_subparsers(required=True)
 
     scan = sub.add_parser("scan", help="Recognize a PDF into MusicXML")
     scan.add_argument("pdf")
-    scan.add_argument("--engine", nargs="+", choices=list(ENGINES), default=["audiveris"])
+    scan.add_argument("--engine", nargs="+", choices=available(), default=["audiveris"])
     scan.add_argument("--out", default="out")
     scan.add_argument("--truth", help="Ground-truth MusicXML to score the result against")
     scan.add_argument("--mei", action="store_true", help="Also convert to MEI with Verovio")
@@ -164,7 +174,7 @@ def main() -> None:
     rec.set_defaults(func=cmd_reconcile)
 
     fx = sub.add_parser("fixtures", help="Build ground-truth test PDFs")
-    fx.add_argument("names", nargs="*", help=f"Any of {', '.join(fixtures.PIECES)}; all by default")
+    fx.add_argument("names", nargs="*", help="Fixture names; all by default")
     fx.add_argument("--out", default="fixtures")
     fx.set_defaults(func=cmd_fixtures)
 
@@ -195,6 +205,9 @@ def main() -> None:
     ui.add_argument("--port", type=int, default=8000)
     ui.add_argument("--out", default="out")
     ui.set_defaults(func=cmd_ui)
+    return parser
 
-    args = parser.parse_args()
+
+def main() -> None:
+    args = build_parser().parse_args()
     args.func(args)

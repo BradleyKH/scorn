@@ -9,9 +9,6 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162.0",
-    "homr>=0.7.0",
-    "music21>=10.5.2",
-    "onnxruntime-gpu[cuda,cudnn]>=1.31",
     "pymupdf>=2.0",
     "python-multipart>=0.0.32",
     "uvicorn>=0.54.0",
@@ -26,12 +23,21 @@ requires = ["uv_build>=0.10.2,<0.11.0"]
 build-backend = "uv_build"
 
 [tool.uv]
-# homr pins the CPU onnxruntime, which clashes with onnxruntime-gpu.
+# Drops onnxruntime from the whole resolution. homr pins the CPU build, which clashes with
+# onnxruntime-gpu, and pymupdf 2.0 requires it, so without this the core install carries it too.
 override-dependencies = ["onnxruntime; sys_platform == 'never'"]
 # nvidia-cublas ships Linux wheels only for some versions; resolve for this machine.
 required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'"]
+default-groups = ["dev", "eval", "homr"]
 
 [dependency-groups]
 dev = [
     "pytest>=9.2.0",
+]
+eval = [
+    "music21>=10.5.2",
+]
+homr = [
+    "homr>=0.7.0",
+    "onnxruntime-gpu[cuda,cudnn]>=1.31",
 ]

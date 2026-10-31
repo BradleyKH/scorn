@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scorn</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #1d2330;
+    --muted: #5d6677;
+    --border: #cfd5df;
+    --accent: #2457c5;
+    --accent-text: #ffffff;
+    --accent-soft: #e8effc;
+    --warn-bg: #fff4d6;
+    --warn-border: #d9a514;
+    --err-bg: #fde8e8;
+    --err-border: #d14343;
+    --ok-bg: #e6f5ea;
+    --ok-border: #3a9a55;
+    --focus: #1a46a8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b;
+      --card: #1b2029;
+      --text: #e8ebf1;
+      --muted: #9aa4b5;
+      --border: #3a4251;
+      --accent: #6c97f0;
+      --accent-text: #0c1424;
+      --accent-soft: #232d44;
+      --warn-bg: #3a3012;
+      --warn-border: #b08a1a;
+      --err-bg: #3d1e1e;
+      --err-border: #c75a5a;
+      --ok-bg: #1b3324;
+      --ok-border: #4aa866;
+      --focus: #9bb9f5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header { padding: 24px 24px 0; max-width: 760px; width: 100%; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 1.5rem; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 24px; }
+  footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 16px; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+  }
+  #drop {
+    border: 3px dashed var(--border);
+    border-radius: 16px;
+    padding: 64px 24px;
+    text-align: center;
+    background: var(--card);
+    cursor: pointer;
+  }
+  #drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  #drop .big { font-size: 1.4rem; font-weight: 600; margin: 0 0 8px; }
+  #drop .or { color: var(--muted); margin: 0 0 16px; }
+
+  button, a.btn {
+    font: inherit;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    padding: 10px 18px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  button:hover, a.btn:hover { border-color: var(--accent); }
+  button.primary, a.btn.primary {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+    font-weight: 600;
+    padding: 12px 22px;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.9rem; }
+
+  .filename { font-weight: 600; font-size: 1.15rem; word-break: break-word; margin: 0 0 16px; }
+  .bar { height: 14px; border-radius: 7px; background: var(--accent-soft); overflow: hidden; border: 1px solid var(--border); }
+  .bar > div { height: 100%; background: var(--accent); width: 0; transition: width 0.4s; }
+  .bar.indeterminate > div { width: 35%; animation: slide 1.4s ease-in-out infinite; }
+  @keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+  @media (prefers-reduced-motion: reduce) {
+    .bar.indeterminate > div { animation: none; width: 100%; opacity: 0.5; }
+  }
+
+  .notice { border: 1px solid var(--ok-border); background: var(--ok-bg); border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .notice.caution { border-color: var(--warn-border); background: var(--warn-bg); }
+  .notice.error { border-color: var(--err-border); background: var(--err-bg); }
+  .movement { border-top: 1px solid var(--border); padding: 16px 0; }
+  .movement:first-of-type { border-top: 0; }
+  .movement h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .movement ul { margin: 8px 0 0; padding-left: 20px; }
+  .movement h4 { margin: 12px 0 0; font-size: 0.95rem; }
+  a.nobreaks { margin-left: 4px; color: var(--accent); }
+
+  #viewer { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+  #viewer img { max-width: 100%; display: block; margin: 12px auto; border: 1px solid var(--border); background: #fff; }
+  .viewer-title { margin: 0 0 12px; font-weight: 600; text-align: center; }
+  .viewer-nav { display: flex; gap: 12px; align-items: center; justify-content: center; }
+  label.check { display: flex; gap: 8px; align-items: center; }
+  label.check input { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Scorn</h1>
+  <p>Turn a PDF of sheet music into a file your music program can open.</p>
+</header>
+
+<main>
+  <section id="screen-start">
+    <div id="drop">
+      <p class="big">Drop a PDF of sheet music here</p>
+      <p class="or">or</p>
+      <button type="button" id="browse" class="primary">Browse for a PDF</button>
+      <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+    </div>
+  </section>
+
+  <section id="screen-working" class="card" hidden aria-live="polite">
+    <p class="filename" id="w-name"></p>
+    <div class="bar indeterminate" id="w-bar" role="progressbar" aria-label="Progress"><div></div></div>
+    <p id="w-status" style="margin:12px 0 4px"></p>
+    <p class="muted small" style="margin:0">Time so far: <span id="w-elapsed">0:00</span></p>
+    <p class="muted" style="margin:16px 0 0">This usually takes a few minutes for a long score.</p>
+  </section>
+
+  <section id="screen-done" class="card" hidden>
+    <p class="filename" id="d-name"></p>
+    <div id="d-movements"></div>
+    <div class="row">
+      <button type="button" id="open-folder">Open folder</button>
+    </div>
+    <p id="d-msg" class="small" role="status"></p>
+    <div id="viewer" hidden>
+      <p id="v-title" class="viewer-title" hidden></p>
+      <div class="viewer-nav">
+        <button type="button" id="prev">Previous</button>
+        <span id="v-count" aria-live="polite"></span>
+        <button type="button" id="next">Next</button>
+      </div>
+      <img id="v-img" alt="">
+    </div>
+    <div class="row"><button type="button" class="again">Scan another PDF</button></div>
+  </section>
+
+  <section id="screen-failed" class="card" hidden>
+    <p class="filename" id="f-name"></p>
+    <div class="notice error" role="alert" id="f-msg"></div>
+    <div id="f-diag" hidden>
+      <div class="row">
+        <button type="button" id="copy-diag">Copy diagnostics</button>
+        <label class="check"><input type="checkbox" id="inc-pdf"> Include the PDF</label>
+      </div>
+      <p class="muted small">This saves a small file you can send to whoever is helping you.</p>
+    </div>
+    <div class="row"><button type="button" class="again primary">Scan another PDF</button></div>
+  </section>
+</main>
+
+<footer>Scorn <span id="version"></span></footer>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = ["start", "working", "done", "failed"];
+  var job = null, pollTimer = null, tickTimer = null, startedAt = 0;
+  var images = [], imgIndex = 0, keyHandlerOn = false;
+
+  function show(name) {
+    screens.forEach(function (s) { $("screen-" + s).hidden = (s !== name); });
+  }
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+  function enc(name) { return encodeURIComponent(name).replace(/%2F/g, "/"); }
+  function detailText(body, fallback) {
+    var d = body && body.detail;
+    if (typeof d === "string") return d;
+    if (Array.isArray(d)) return "That file could not be used. Please choose a PDF.";
+    return fallback;
+  }
+
+  // Heartbeat and footer
+  function beat() { fetch("/api/heartbeat", { method: "POST" }).catch(function () {}); }
+  beat(); setInterval(beat, 10000);
+  fetch("/api/version").then(function (r) { return r.json(); })
+    .then(function (v) { $("version").textContent = "version " + v.version; }).catch(function () {});
+
+  // Start screen
+  var drop = $("drop"), fileInput = $("file");
+  function pick() { fileInput.click(); }
+  $("browse").addEventListener("click", function (e) { e.stopPropagation(); pick(); });
+  drop.addEventListener("click", pick);
+  fileInput.addEventListener("change", function () {
+    if (fileInput.files.length) upload(fileInput.files[0]);
+    fileInput.value = "";
+  });
+  ["dragenter", "dragover"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+  });
+  drop.addEventListener("drop", function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) upload(f);
+  });
+  // Dropping outside the zone should not make the browser open the file.
+  window.addEventListener("dragover", function (e) { e.preventDefault(); });
+  window.addEventListener("drop", function (e) { e.preventDefault(); });
+
+  function fail(name, message, jobId) {
+    stopTimers();
+    $("f-name").textContent = name || "";
+    $("f-msg").textContent = message;
+    $("f-diag").hidden = !jobId;
+    $("inc-pdf").checked = false;
+    show("failed");
+  }
+
+  function upload(file) {
+    $("w-name").textContent = file.name;
+    $("w-status").textContent = "Sending your file...";
+    setBar(null);
+    startedAt = Date.now();
+    $("w-elapsed").textContent = "0:00";
+    show("working");
+    var fd = new FormData();
+    fd.append("pdf", file, file.name);
+    fetch("/api/simple/jobs", { method: "POST", body: fd })
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (body) {
+          if (!r.ok) throw new Error(detailText(body, "Something went wrong sending that file. Please try again."));
+          return body;
+        });
+      })
+      .then(function (body) {
+        job = body;
+        startTimers();
+        render(body);
+      })
+      .catch(function (err) {
+        job = null;
+        var msg = err instanceof TypeError ? "Could not reach Scorn. Please close this window and open Scorn again." : err.message;
+        fail(file.name, msg, null);
+      });
+  }
+
+  function setBar(p) {
+    var bar = $("w-bar"), inner = bar.firstElementChild;
+    if (p && p.pages && p.page > 0) {
+      bar.classList.remove("indeterminate");
+      var pct = Math.min(100, Math.round(100 * p.page / p.pages));
+      inner.style.width = pct + "%";
+      bar.setAttribute("aria-valuemin", "0");
+      bar.setAttribute("aria-valuemax", String(p.pages));
+      bar.setAttribute("aria-valuenow", String(p.page));
+    } else {
+      bar.classList.add("indeterminate");
+      inner.style.width = "";
+      bar.removeAttribute("aria-valuenow");
+    }
+  }
+
+  function startTimers() {
+    stopTimers();
+    pollTimer = setInterval(poll, 1000);
+    tickTimer = setInterval(function () {
+      if (job && (job.status === "queued" || job.status === "running")) {
+        $("w-elapsed").textContent = fmtTime((Date.now() - startedAt) / 1000);
+      }
+    }, 500);
+  }
+  function stopTimers() {
+    clearInterval(pollTimer); clearInterval(tickTimer);
+    pollTimer = tickTimer = null;
+  }
+
+  var misses = 0;
+  function poll() {
+    if (!job) return;
+    fetch("/api/jobs/" + job.id)
+      .then(function (r) { if (!r.ok) throw new Error("gone"); return r.json(); })
+      .then(function (body) { misses = 0; job = body; render(body); })
+      .catch(function () {
+        if (++misses >= 5) fail($("w-name").textContent, "Scorn lost track of this job. Please try again.", null);
+      });
+  }
+
+  function render(j) {
+    var simple = j.simple || {};
+    if (j.status === "failed" || (j.status === "done" && simple.error)) {
+      fail(j.pdf || $("w-name").textContent, simple.error || "That PDF could not be converted.", j.id);
+      return;
+    }
+    if (j.status === "done") { stopTimers(); renderDone(j); return; }
+    $("w-name").textContent = j.pdf || $("w-name").textContent;
+    var p = j.progress;
+    setBar(p);
+    $("w-status").textContent = p && p.pages && p.page > 0 ? "Page " + p.page + " of " + p.pages
+      : (j.status === "queued" ? "Waiting to start..." : "Working on it...");
+    if (j.elapsed) startedAt = Date.now() - j.elapsed * 1000;
+    $("w-elapsed").textContent = fmtTime(j.elapsed || (Date.now() - startedAt) / 1000);
+    show("working");
+  }
+
+  // Done screen
+  function renderDone(j) {
+    var simple = j.simple || {}, box = $("d-movements");
+    box.textContent = "";
+    $("d-name").textContent = j.pdf || "";
+    $("d-msg").textContent = "";
+    $("viewer").hidden = true;
+    var moves = simple.movements || [];
+    moves.forEach(function (m, i) {
+      var div = document.createElement("div");
+      div.className = "movement";
+      var h = document.createElement("h3");
+      h.textContent = moves.length > 1 ? m.name : "Your music is ready";
+      div.appendChild(h);
+
+      var row = document.createElement("div");
+      row.className = "row";
+      var a = document.createElement("a");
+      a.className = "btn primary";
+      a.href = "/api/jobs/" + j.id + "/published/" + enc(m.musicxml);
+      a.setAttribute("download", "");
+      a.textContent = moves.length > 1 ? "Download MusicXML for " + m.name : "Download MusicXML";
+      row.appendChild(a);
+      if (m.no_breaks) {
+        var b = document.createElement("a");
+        b.className = "nobreaks small";
+        b.href = "/api/jobs/" + j.id + "/published/" + enc(m.no_breaks);
+        b.setAttribute("download", "");
+        b.textContent = "Download without page breaks";
+        row.appendChild(b);
+      }
+      var cmp = document.createElement("button");
+      cmp.type = "button";
+      cmp.className = "compare-btn";
+      cmp.textContent = moves.length > 1 ? "Compare " + m.name + " with the PDF" : "Compare with the PDF";
+      cmp.addEventListener("click", function () { startProof(i + 1, m.name, moves.length > 1); });
+      row.appendChild(cmp);
+      div.appendChild(row);
+
+      if (m.summary) {
+        var n = document.createElement("div");
+        n.className = "notice" + (m.scanned ? " caution" : "");
+        n.textContent = m.scanned ? "Please check the result. " + m.summary : m.summary;
+        div.appendChild(n);
+      }
+      if (m.rhythm && m.rhythm.length) {
+        var h4 = document.createElement("h4");
+        h4.textContent = "These bars need checking";
+        var ul = document.createElement("ul");
+        m.rhythm.forEach(function (s) {
+          var li = document.createElement("li");
+          li.textContent = s;
+          ul.appendChild(li);
+        });
+        div.appendChild(h4); div.appendChild(ul);
+      }
+      div.dataset.index = String(i + 1);
+      box.appendChild(div);
+    });
+    $("open-folder").hidden = !simple.folder;
+    setCompareBusy(false);
+    show("done");
+  }
+
+  $("open-folder").addEventListener("click", function () {
+    if (!job) return;
+    fetch("/api/jobs/" + job.id + "/open-folder", { method: "POST" }).then(function (r) {
+      if (r.ok) { $("d-msg").textContent = "Opened the folder."; return; }
+      return r.json().catch(function () { return null; }).then(function (b) {
+        $("d-msg").textContent = detailText(b, "Could not open the folder.");
+      });
+    }).catch(function () { $("d-msg").textContent = "Could not open the folder."; });
+  });
+
+  // Compare with the PDF
+  function setCompareBusy(busy) {
+    Array.prototype.forEach.call(document.querySelectorAll(".compare-btn"), function (b) {
+      b.disabled = busy;
+    });
+  }
+
+  function startProof(n, name, several) {
+    if (!job) return;
+    var id = job.id;
+    setCompareBusy(true);
+    $("viewer").hidden = true;
+    $("d-msg").textContent = "Making comparison pictures...";
+    fetch("/api/jobs/" + id + "/proof?movement=" + n, { method: "POST" })
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (b) {
+          if (!r.ok) throw new Error(detailText(b, "Could not make the comparison."));
+          return b;
+        });
+      })
+      .then(function () { waitProof(id, n, name, several); })
+      .catch(function (e) { $("d-msg").textContent = e.message; setCompareBusy(false); });
+  }
+
+  // A proof without a movement number is for movement 1.
+  function waitProof(id, n, name, several) {
+    fetch("/api/jobs/" + id).then(function (r) { return r.json(); }).then(function (j) {
+      var p = j.proof;
+      if (!p || (p.movement || 1) !== n || p.status === "queued" || p.status === "running") {
+        setTimeout(function () { waitProof(id, n, name, several); }, 1000);
+        return;
+      }
+      setCompareBusy(false);
+      if (p.status === "failed" || !p.images || !p.images.length) {
+        $("d-msg").textContent = p.error || "Could not make the comparison pictures.";
+        return;
+      }
+      $("d-msg").textContent = "";
+      images = p.images.map(function (img) { return "/api/jobs/" + id + "/files/" + enc(img); });
+      imgIndex = 0;
+      var title = $("v-title");
+      title.hidden = !several;
+      title.textContent = several ? "Comparing " + name : "";
+      $("viewer").hidden = false;
+      showImage();
+      if (!keyHandlerOn) { document.addEventListener("keydown", onKey); keyHandlerOn = true; }
+    }).catch(function () {
+      $("d-msg").textContent = "Could not make the comparison pictures.";
+      setCompareBusy(false);
+    });
+  }
+  function showImage() {
+    $("v-img").src = images[imgIndex];
+    $("v-img").alt = "Comparison image " + (imgIndex + 1) + " of " + images.length;
+    $("v-count").textContent = "Image " + (imgIndex + 1) + " of " + images.length;
+    $("prev").disabled = imgIndex === 0;
+    $("next").disabled = imgIndex === images.length - 1;
+  }
+  function step(d) {
+    var n = imgIndex + d;
+    if (n >= 0 && n < images.length) { imgIndex = n; showImage(); }
+  }
+  function onKey(e) {
+    if ($("viewer").hidden || $("screen-done").hidden) return;
+    if (e.key === "ArrowLeft") { step(-1); e.preventDefault(); }
+    else if (e.key === "ArrowRight") { step(1); e.preventDefault(); }
+  }
+  $("prev").addEventListener("click", function () { step(-1); });
+  $("next").addEventListener("click", function () { step(1); });
+
+  // Failed screen
+  $("copy-diag").addEventListener("click", function () {
+    if (!job) return;
+    var a = document.createElement("a");
+    a.href = "/api/jobs/" + job.id + "/diagnostics?include_pdf=" + ($("inc-pdf").checked ? "true" : "false");
+    a.setAttribute("download", "");
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  // Start over
+  Array.prototype.forEach.call(document.querySelectorAll(".again"), function (b) {
+    b.addEventListener("click", function () {
+      stopTimers(); job = null; images = [];
+      show("start");
+      $("browse").focus();
+    });
+  });
+
+  show("start");
+})();
+</script>
+</body>
+</html>

@@ -3,9 +3,10 @@ from pathlib import Path
 
 import pymupdf
 import pytest
-from music21 import converter
 
-from scorn import compare
+converter = pytest.importorskip("music21").converter
+
+from scorn import compare  # noqa: E402
 from scorn.reconcile import pdf_notes
 from scorn.reconcile.geometry import read_geometry
 from scorn.reconcile.glyphs import document_fonts, page_glyphs

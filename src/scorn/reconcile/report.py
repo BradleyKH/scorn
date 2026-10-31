@@ -91,8 +91,8 @@ class Report:
 
     def summary(self) -> str:
         if not self.applicable:
-            return ("The PDF could not be read as printed music, so the scan was left exactly as it was. "
-                    f"Reason: {self.reason}.")
+            # The technical reason stays in to_dict(), out of the sentence people read.
+            return "The PDF could not be read as printed music, so the scan was left exactly as it was."
         lines = _sentences(self.applied)
         if not lines:
             lines = ["The scan already agreed with the PDF; nothing was changed."]

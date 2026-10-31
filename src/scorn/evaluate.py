@@ -149,7 +149,8 @@ def cached_scan(pdf: Path, work: Path) -> Path:
     failure = work / "failed.txt"
     if failure.exists():
         raise RuntimeError(failure.read_text(encoding="utf-8").strip())
-    exported = sorted((work / "audiveris").rglob("*.mxl")) if (work / "audiveris").exists() else []
+    # Older runs exported one folder deeper, under work/audiveris/.
+    exported = sorted(work.rglob("*.mxl")) if work.exists() else []
     if not exported:
         try:
             exported = audiveris.scan(pdf, work)

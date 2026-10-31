@@ -116,6 +116,7 @@ def test_not_applicable_passes_input_through(scores_dir, tmp_path):
     assert not report.applicable and report.reason
     assert out.read_bytes() == src.read_bytes()
     assert "left exactly as it was" in report.summary()
+    assert report.reason not in report.summary() and report.to_dict()["reason"] == report.reason
 
 
 def test_not_applicable_unzips_mxl_unchanged(scores_dir, stopford_raw, tmp_path):

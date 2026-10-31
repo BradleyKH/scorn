@@ -1,11 +1,11 @@
 import os
 import shutil
-import subprocess
 import tempfile
 from pathlib import Path
 
 import pymupdf
 
+from scorn import procs
 from scorn.mei import toolkit
 
 BROWSERS = [
@@ -48,7 +48,7 @@ def rasterize_svg(svg: Path, png: Path, browser: str) -> None:
     width = int(float(head.split('width="')[1].split("px")[0]))
     height = int(float(head.split('height="')[1].split("px")[0]))
     with tempfile.TemporaryDirectory() as profile:
-        subprocess.run([browser, "--headless=new", "--disable-gpu", "--hide-scrollbars",
+        procs.run([browser, "--headless=new", "--disable-gpu", "--hide-scrollbars",
                         f"--user-data-dir={profile}", "--force-device-scale-factor=2",
                         f"--window-size={width},{height}", f"--screenshot={png.resolve()}", svg.resolve().as_uri()],
                        check=True, capture_output=True, timeout=120)

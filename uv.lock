@@ -1455,9 +1455,6 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
-    { name = "homr" },
-    { name = "music21" },
-    { name = "onnxruntime-gpu", extra = ["cuda", "cudnn"] },
     { name = "pymupdf" },
     { name = "python-multipart" },
     { name = "uvicorn" },
@@ -1468,13 +1465,17 @@ dependencies = [
 dev = [
     { name = "pytest" },
 ]
+eval = [
+    { name = "music21" },
+]
+homr = [
+    { name = "homr" },
+    { name = "onnxruntime-gpu", extra = ["cuda", "cudnn"] },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.162.0" },
-    { name = "homr", specifier = ">=0.7.0" },
-    { name = "music21", specifier = ">=10.5.2" },
-    { name = "onnxruntime-gpu", extras = ["cuda", "cudnn"], specifier = ">=1.31" },
     { name = "pymupdf", specifier = ">=2.0" },
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "uvicorn", specifier = ">=0.54.0" },
@@ -1483,6 +1484,11 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.2.0" }]
+eval = [{ name = "music21", specifier = ">=10.5.2" }]
+homr = [
+    { name = "homr", specifier = ">=0.7.0" },
+    { name = "onnxruntime-gpu", extras = ["cuda", "cudnn"], specifier = ">=1.31" },
+]
 
 [[package]]
 name = "shapely"

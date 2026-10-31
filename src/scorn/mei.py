@@ -3,6 +3,8 @@ from pathlib import Path
 
 import verovio
 
+from scorn.simple import movement_name
+
 RESOURCES = str(files("verovio") / "data")
 
 
@@ -15,7 +17,9 @@ def toolkit() -> verovio.toolkit:
 
 
 def mei_path(musicxml: Path, engine: str) -> Path:
-    return musicxml.with_name(musicxml.name.split(".")[0] + f".{engine}.mei")
+    """`<stem>[.mvtN][.reconciled].mxl` or `<stem>.homr.musicxml` to `<stem>[.mvtN].<engine>.mei`."""
+    name = movement_name(musicxml).removesuffix(".reconciled").removesuffix(f".{engine}")
+    return musicxml.with_name(f"{name}.{engine}.mei")
 
 
 def to_mei(musicxml: Path, out: Path) -> None:
