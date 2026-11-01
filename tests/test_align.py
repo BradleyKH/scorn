@@ -1,76 +1,9 @@
 from fractions import Fraction
-from pathlib import Path
 
 import pytest
 
-from scorn import rhythm
 from scorn.reconcile import align, pdf_score
 from scorn.reconcile.pdf_notes import Event, Note
-
-ROOT = Path(__file__).resolve().parent.parent
-STOPFORD_RAW = (
-    ROOT / "notes" / "stopford" / "out" / "Christ the Lord is risen again (Stopford) - full score" / "audiveris" / "audiveris"
-    / "Christ the Lord is risen again (Stopford) - full score.mxl"
-)
-BRASS = ["Trumpet I", "Trumpet II", "Horn", "Trombone", "Tuba", "Timpani"]
-
-
-@pytest.fixture(scope="module")
-def stopford_raw_alignment(stopford_pdf):
-    if not STOPFORD_RAW.exists():
-        pytest.skip(f"missing Audiveris output (run a scan first): {STOPFORD_RAW}")
-    score = pdf_score.read_pdf(stopford_pdf)
-    return align.align(score, rhythm.load(STOPFORD_RAW))
-
-
-def _holder(a: align.Alignment, instrument: str, number: int) -> str | None:
-    idx = a.measure_index(str(number))
-    pm = a.measure_map[idx]
-    for s in a.staves:
-        if s.system == pm.system_order and s.instrument == instrument:
-            return s.part
-    return None
-
-
-@pytest.mark.parametrize("first,last,parts", [
-    (1, 28, ["P5", "P6", "P7", "P8", "P9", "P10"]),
-    (29, 32, ["P3", "P4", "P5", "P6", "P7", "P8"]),
-    (33, 48, ["P5", "P6", "P7", "P8", "P9", "P10"]),
-    (49, 64, ["P4", "P5", "P6", "P7", "P8", "P9"]),
-    (65, 76, ["P1", "P2", "P3", "P4", "P5", "P6"]),
-])
-def test_stopford_instrument_mapping(stopford_raw_alignment, first, last, parts):
-    a = stopford_raw_alignment
-    for n in range(first, last + 1):
-        assert [_holder(a, i, n) for i in BRASS] == parts, f"m{n}"
-
-
-def test_stopford_m29_choir_and_organ(stopford_raw_alignment):
-    a = stopford_raw_alignment
-    assert _holder(a, "Soprano / Alto", 29) == "P9"
-    pm = a.measure_map[a.measure_index("29")]
-    organ = sorted((s.instrument_staff, s.part) for s in a.staves
-                   if s.system == pm.system_order and s.instrument == "Organ")
-    assert organ == [(1, "P11"), (2, "P12"), (3, "P14")]
-
-
-def test_stopford_every_staff_matched_and_conflicts(stopford_raw_alignment):
-    a = stopford_raw_alignment
-    assert not a.unmatched
-    conflicted = {c.part for c in a.conflicts}
-    assert {"P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"} <= conflicted
-    p5 = next(c for c in a.conflicts if c.part == "P5")
-    assert p5.holdings[0] == ("1", "28", "Trumpet I")
-    assert ("29", "32", "Horn") in p5.holdings
-
-
-def test_stopford_cell_lookup(stopford_raw_alignment):
-    a = stopford_raw_alignment
-    # Trumpet II m3: Audiveris reads quarters where the PDF has eighths
-    cell = a.cell("P6", "3")
-    assert cell is not None and cell.instrument == "Trumpet II"
-    assert cell.content is not None and cell.content.staff == 1
-    assert cell.missing or cell.substituted
 
 
 def _ev(x: float, onset: Fraction, dur: Fraction, *midis: int) -> Event:
@@ -113,11 +46,6 @@ def test_change_log_order():
     assert [c.seq for c in log] == [0, 1, 2]
     assert [(c.part, c.measure) for c in log.ordered(["P1", "P2"])] == [("P1", "2"), ("P1", "9"), ("P2", "10")]
     assert not list(log)[2].applied
-
-
-def test_check_root_matches_check(stopford_truth):
-    assert [e.format() for e in rhythm.check_root(rhythm.load(stopford_truth))] == \
-        [e.format() for e in rhythm.check(stopford_truth)]
 
 
 def test_unlabeled_staves_follow_their_instrument_past_hidden_staves(scores_dir):

@@ -1,109 +1,7 @@
-import re
-
 import pymupdf
-import pytest
 
 from scorn.reconcile import geometry, pdf_text
 from scorn.reconcile.model import TextSpan
-
-
-@pytest.fixture(scope="module")
-def stopford(stopford_pdf):
-    with pymupdf.open(stopford_pdf) as doc:
-        return pdf_text.read_document_text(doc)
-
-
-def _rows(content: pdf_text.TextContent) -> dict[tuple[int, int, int], str]:
-    rows: dict[tuple[int, int, int], list[pdf_text.Syllable]] = {}
-    for s in content.lyrics:
-        rows.setdefault((s.system, s.staff, s.row), []).append(s)
-    return {k: pdf_text.lyric_line(v) for k, v in rows.items()}
-
-
-def test_lyrics_measures_29_to_32(stopford):
-    page = stopford.pages[7]
-    assert {n.number for n in page.measure_numbers} == {29}
-    assert "is our Pas-chal Lamb to-day; we too sing for joy, and say" in _rows(page).values()
-
-
-def test_hyphens_inside_one_span_are_split(stopford):
-    # "le - lu-ia," is a single span in the PDF
-    rows = _rows(stopford.pages[12])
-    assert any(r.startswith("Al-le-lu-ia, al-le-lu-ia") for r in rows.values())
-    syl = [s for s in stopford.pages[12].lyrics if s.staff == 7]
-    assert [s.text for s in syl[:4]] == ["Al", "le", "lu", "ia,"]
-    assert all(s.hyphen_after for s in syl[:3]) and not syl[3].hyphen_after
-
-
-def test_overstruck_hyphens_are_not_doubled(stopford):
-    assert "--" not in "".join(_rows(stopford.pages[17]).values())
-
-
-def test_lyrics_attach_to_staff_above(stopford):
-    page = stopford.pages[17]
-    assert sorted({s.staff for s in page.lyrics}) == [6, 7, 8, 9, 10, 11]
-
-
-def test_group_labels_map_to_six_choir_staves(stopford):
-    labels = [lb for lb in stopford.pages[16].labels if lb.kind == "group"]
-    assert [lb.text for lb in labels] == [
-        "(Women - Group 1)", "(Women - Group 2)", "(Women - Group 3)",
-        "(Men - Group 1)", "(Men - Group 2)", "(Men - Group 3)",
-    ]
-    assert [lb.staff for lb in labels] == [6, 7, 8, 9, 10, 11]
-
-
-def test_staff_labels_full_then_abbreviated(stopford):
-    first = [lb.text for lb in stopford.pages[0].labels if lb.kind == "name"]
-    assert first[:3] == ["Trumpet I", "Trumpet II", "Horn"]
-    assert not any(lb.abbreviated for lb in stopford.pages[0].labels)
-    later = {lb.text for lb in stopford.pages[7].labels}
-    assert {"Tpt. I", "Hn.", "S", "A", "Org."} <= later
-    assert all(lb.abbreviated for lb in stopford.pages[7].labels)
-    # S and A share the first choir staff, T and B the second
-    by_text = {lb.text: lb.staff for lb in stopford.pages[7].labels}
-    assert by_text["S"] == by_text["A"] != by_text["T"] == by_text["B"]
-
-
-def test_title_block(stopford):
-    t = stopford.title
-    assert t.title == "Christ the Lord is risen again"
-    assert t.composer == "Philip W. J. Stopford"
-    assert t.lyricist == "Michael Weisse; tr. Catherine Winkworth"
-    assert t.subtitle.startswith("SATB divisi*")
-    assert any("Birnamwood" in c for c in t.copyright)
-
-
-def test_tempo_with_metronome_mark(stopford):
-    (tempo,) = stopford.pages[0].tempos
-    assert (tempo.text, tempo.unit, tempo.dots, tempo.bpm) == ("Joyfully", "half", 0, 64.0)
-
-
-def test_tempo_i_is_a_tempo_not_a_direction(stopford):
-    tempos = [t.text for t in stopford.pages[14].tempos]
-    assert "Tempo I" in tempos
-    assert not any("57" in d.text for d in stopford.pages[14].directions)
-
-
-def test_directions_and_measure_numbers(stopford):
-    assert {d.text for d in stopford.pages[14].directions if d.italic} == {"rit."}
-    assert any(d.text == "Unison" and d.italic for d in stopford.pages[1].directions)
-    assert {n.number for n in stopford.pages[1].measure_numbers} == {5}
-
-
-def test_watermark_and_furniture_are_dropped(stopford):
-    for page in stopford.pages:
-        assert len(page.watermarks) == 1
-        texts = [s.text for s in page.title_zone + page.other + page.margin]
-        assert not any("Purchased by" in t for t in texts)
-    assert not any(re.fullmatch(r"\d+", s.text.strip()) for s in stopford.pages[0].margin)
-    assert any(s.text == "MSM-50-8210A-E" for s in stopford.furniture)
-    assert "MSM-50-8210A-E" not in stopford.title.other
-
-
-def test_no_music_or_lyrics_leak_into_directions(stopford):
-    for page in stopford.pages:
-        assert not any(d.text in {"al", "le", "lu", "-"} for d in page.directions)
 
 
 def _span(text, size, x0, x1, y, flags=0):
@@ -135,14 +33,6 @@ def test_metronome_variants():
 def test_chord_symbols_are_not_lyrics():
     assert pdf_text._chordish("B M7 /C F G m7".split())
     assert not pdf_text._chordish("I once was lost".split())
-
-
-def test_read_text_single_page(stopford_pdf):
-    with pymupdf.open(stopford_pdf) as doc:
-        page = doc[1]
-        content = pdf_text.read_text(page, geometry.read_geometry(page))
-    assert content.page == 1
-    assert len(content.lyrics) > 10
 
 
 def _synthetic(staff_tops, words, x0=50, height=792, spacing=5.0, font="helv"):

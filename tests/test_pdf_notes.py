@@ -9,57 +9,6 @@ converter = pytest.importorskip("music21").converter
 from scorn import compare  # noqa: E402
 from scorn.reconcile import pdf_notes
 from scorn.reconcile.geometry import read_geometry
-from scorn.reconcile.glyphs import document_fonts, page_glyphs
-
-
-@pytest.fixture(scope="module")
-def stopford_page1(stopford_pdf):
-    doc = pymupdf.open(stopford_pdf)
-    page = doc[0]
-    contents = pdf_notes.read_notes(page, read_geometry(page), list(page_glyphs(page, document_fonts(doc))))
-    return {(c.staff, c.measure): c for c in contents}
-
-
-def _summary(c: pdf_notes.StaffMeasureContent) -> list[tuple[str, str, int]]:
-    return [("r" if e.is_rest else "+".join(n.name for n in e.notes), e.type, e.dots) for e in c.events]
-
-
-def test_stopford_trumpet2_m3(stopford_page1):
-    c = stopford_page1[(1, 2)]
-    assert _summary(c) == [
-        ("r", "quarter", 0),
-        ("F4", "eighth", 0),
-        ("E4", "eighth", 0),
-        ("D4", "quarter", 0),
-        ("C4", "quarter", 0),
-    ]
-    assert sum(e.duration for e in c.events) == c.time.quarters
-
-
-def test_stopford_timpani_m4_single_note(stopford_page1):
-    c = stopford_page1[(5, 3)]
-    notes = [e for e in c.events if not e.is_rest]
-    # the tremolo strokes on the stem must not read as extra chord notes
-    assert len(notes) == 1 and [n.name for n in notes[0].notes] == ["C3"]
-    assert notes[0].type == "half"
-
-
-def test_stopford_header(stopford_page1):
-    trumpet, timpani = stopford_page1[(0, 0)], stopford_page1[(5, 0)]
-    assert trumpet.clef == pdf_notes.Clef("G", 2) and timpani.clef == pdf_notes.Clef("F", 4)
-    assert trumpet.key == -1 and trumpet.key_shown
-    assert trumpet.time == pdf_notes.TimeSignature(2, 2) and trumpet.time_shown
-    # later measures carry the header without redrawing it
-    assert stopford_page1[(0, 1)].time == pdf_notes.TimeSignature(2, 2) and not stopford_page1[(0, 1)].time_shown
-
-
-def test_stopford_bars_add_up(stopford_pdf):
-    contents = pdf_notes.read_document_notes(pymupdf.open(stopford_pdf))
-    assert contents
-    full = [c for c in contents if c.time and not c.multirest and c.voices == 1]
-    ok = [c for c in full if sum(e.duration for e in c.events) == c.time.quarters]
-    # pickups and the odd misread aside, single-voice bars should fill their meter
-    assert len(ok) / len(full) >= 0.95
 
 
 def test_clef_pitch_mapping():

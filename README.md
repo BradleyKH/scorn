@@ -70,8 +70,7 @@ uv run --offline scorn reconcile score.pdf score.mxl
 # Drop the PDF's page and system breaks so the notation program lays the score out itself
 uv run --offline scorn scan score.pdf --no-page-breaks
 
-# Run the test suite (corpus tests skip unless SCORN_SCORES points at a score folder;
-# full-score tests skip unless the Stopford score and its scans are in notes/stopford/)
+# Run the test suite (corpus tests skip unless SCORN_SCORES points at a score folder)
 uv run --offline pytest
 
 # Build the ground-truth fixtures (clean and simulated-scan PDFs from known scores)
@@ -163,7 +162,7 @@ Known limits, with what they cost on the corpus:
 
 ### Proofreading against the PDF
 
-The rhythm check proves every bar adds up; only a side-by-side read proves the bars say what the PDF says. `reconcile` does the deterministic part of that read for born-digital PDFs, so proofreading is the final check on its output and the full job for everything else. On the Stopford full score (a 19-page condensed church score, copyrighted and so not included in `examples/`), a MusicXML that passed the rhythm check still had instruments changing parts mid-piece, wrong notes, dropped ties, and about 150 spurious markings. A measure-by-measure read against the PDF found all of them.
+The rhythm check proves every bar adds up; only a side-by-side read proves the bars say what the PDF says. `reconcile` does the deterministic part of that read for born-digital PDFs, so proofreading is the final check on its output and the full job for everything else. On a 19-page condensed church score (copyrighted and so not included in `examples/`), a MusicXML that passed the rhythm check still had instruments changing parts mid-piece, wrong notes, dropped ties, and about 150 spurious markings. A measure-by-measure read against the PDF found all of them.
 
 **Keep the PDF's page breaks while proofreading.** Engraved with its encoded breaks, the MusicXML puts the same bars on each page as the PDF, so page N of one lines up with page N of the other. Edit and proofread the file with breaks, and strip them (`scan --no-page-breaks`) only as the last step before importing into a notation program.
 
@@ -180,7 +179,7 @@ How to read the images:
 - **Confirm in the XML before fixing.** A misread engraving can look like a misread file; dump the notes of that part and bar to be sure.
 - **Split long scores.** Pages are independent, so several reviewers (or parallel Claude Code agents, each given a page range and the list of already-known issues) can work at once.
 
-Misreads seen on the Stopford score, none of which the rhythm check reports:
+Misreads seen on that score, none of which the rhythm check reports:
 
 | Misread | Looks like |
 | --- | --- |
@@ -192,7 +191,7 @@ Misreads seen on the Stopford score, none of which the rhythm check reports:
 | Markings on the wrong staff | A dynamic between two staves attached to the neighbor, which then has two. |
 | Hairpins and slurs left open | A wedge or slur with a start and no stop, which Verovio warns about on import and draws across many bars. |
 
-**Born-digital PDFs carry their own answer key.** A PDF exported from Finale, Sibelius or Dorico usually draws its notation as text in a music font (Maestro, EngraverFontSet, Bravura), with staff lines, barlines and hairpins as vector lines. PyMuPDF reads both: `page.get_text("rawdict")` gives every glyph with its position, and `page.get_drawings()` gives every line. Grouping horizontal lines in fives finds the staves, vertical lines that cross most staves are barlines, and each dynamic, tremolo or fermata glyph then maps to a staff and a bar. On the Stopford score this gave an exact list of the 105 dynamics, 18 hairpins, 19 timpani tremolos and 6 fermatas, and proved there were no staccatos at all: the PDF's 88 dot glyphs matched the MusicXML's 88 augmentation dots one for one. Glyph codes differ by font, so crop and view one example of each before trusting a mapping. In Maestro, `f`, `F`, `P` and `ƒ` are *f*, *mf*, *mp* and *ff*.
+**Born-digital PDFs carry their own answer key.** A PDF exported from Finale, Sibelius or Dorico usually draws its notation as text in a music font (Maestro, EngraverFontSet, Bravura), with staff lines, barlines and hairpins as vector lines. PyMuPDF reads both: `page.get_text("rawdict")` gives every glyph with its position, and `page.get_drawings()` gives every line. Grouping horizontal lines in fives finds the staves, vertical lines that cross most staves are barlines, and each dynamic, tremolo or fermata glyph then maps to a staff and a bar. On that church score this gave an exact list of the 105 dynamics, 18 hairpins, 19 timpani tremolos and 6 fermatas, and proved there were no staccatos at all: the PDF's 88 dot glyphs matched the MusicXML's 88 augmentation dots one for one. Glyph codes differ by font, so crop and view one example of each before trusting a mapping. In Maestro, `f`, `F`, `P` and `ƒ` are *f*, *mf*, *mp* and *ff*.
 
 After fixing, prove the fix touched only what it meant to: compare each instrument's notes bar by bar between the old and new files, expecting differences only in the bars you changed. Then run `check` and `proof` again and reread the pages.
 
@@ -255,16 +254,16 @@ Each fixture takes 15 to 50 seconds per engine, with homr on the GPU at about 10
 
 ## Real scores
 
-Born-digital PDFs with no ground truth, checked by eye against the `--render` output. The two horn parts are in `examples/`; the Stopford full score is copyrighted and not included.
+Born-digital PDFs with no ground truth, checked by eye against the `--render` output. The two horn parts are in `examples/`; the church full score is copyrighted and not included.
 
 | Score | Audiveris | homr |
 | --- | --- | --- |
 | *A Tune By Mozart*, Horn (F), 1 page | 18 s | 6 s |
 | *Warm-ups A-G*, Horn (F), 1 page | 17 s | 8 s |
-| *Christ the Lord is risen again* (Stopford), full score, 19 pages | about 4 min | 3 min |
+| Church anthem, full score, 19 pages | about 4 min | 3 min |
 
 - On both single-line horn parts the engines agree note for note, and the Mozart matches the PDF. Neither engine reads the "Horn (F)" label: both write a part named "Voice" with no `<transpose>`, so the MusicXML holds written pitch with nothing telling Cadence it sounds a fifth lower.
-- On the Stopford full score Audiveris keeps 15 parts at 75 to 76 measures each across the whole piece. homr's result is unusable: the score is condensed, so pages carry 10 to 15 staves as instruments drop in and out, and joining pages by staff order mixes parts up. It also reads three of the pages as a single 40-measure staff. Use Audiveris for multi-part scores.
+- On the church full score Audiveris keeps 15 parts at 75 to 76 measures each across the whole piece. homr's result is unusable: the score is condensed, so pages carry 10 to 15 staves as instruments drop in and out, and joining pages by staff order mixes parts up. It also reads three of the pages as a single 40-measure staff. Use Audiveris for multi-part scores.
 
 ## License
 
