@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-uv publishes no major-version tags, so this pins a full release.
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      # The CPython and Audiveris pins live in build-bundle.sh, so its hash keys the downloads.
+      - uses: actions/cache@v6
+        with:
+          path: tools/dl
+          key: bundle-downloads-${{ hashFiles('scripts/build-bundle.sh') }}
+
+      - name: Check tag matches pyproject.toml version
+        shell: bash
+        run: |
+          version=$(sed -n 's/^version *= *"\(.*\)"/\1/p' pyproject.toml | head -n 1)
+          expected="v$version"
+          if [ -z "$version" ] || [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match pyproject.toml version ($expected)"
+            exit 1
+          fi
+
+      # Release notes are the annotated tag's message, if any. checkout leaves the tag pointing
+      # straight at the commit, so the tag object has to be fetched before its message can be
+      # read. A lightweight tag has no message (its %(contents) would be the commit's), so it
+      # gets only the standard text.
+      - name: Read release notes from tag
+        shell: bash
+        run: |
+          git fetch --force --no-tags origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          notes=""
+          if [ "$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")" = tag ]; then
+            notes=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME")
+          fi
+          {
+            if [ -n "$notes" ]; then
+              printf '%s\n\n' "$notes"
+            fi
+            printf '%s\n' 'Alpha release. The installer is unsigned, so Windows SmartScreen may warn on first run: choose "More info", then "Run anyway".'
+          } > "$RUNNER_TEMP/release-notes.md"
+
+      - name: Install dependencies
+        run: uv sync --frozen --no-default-groups --group dev
+
+      - name: Tests
+        run: uv run --frozen --no-default-groups --group dev pytest
+
+      - name: Build installer
+        shell: bash
+        run: bash scripts/build-installer.sh
+
+      - name: Create draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/Scorn-Setup-*.exe \
+            --draft \
+            --title "Scorn $GITHUB_REF_NAME (alpha)" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+
+      # Publishing last keeps a broken build off releases/latest, which the app's update check reads.
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest

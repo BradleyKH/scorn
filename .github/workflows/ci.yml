@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-uv publishes no major-version tags, so this pins a full release.
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install Python
+        run: uv python install
+
+      # Core plus pytest only; the homr group pulls multi-gigabyte model dependencies.
+      - name: Install dependencies
+        run: uv sync --frozen --no-default-groups --group dev
+
+      - name: Tests
+        run: uv run --frozen --no-default-groups --group dev pytest
+
+      # The CPython and Audiveris pins live in build-bundle.sh, so a pin change busts the cache.
+      - uses: actions/cache@v6
+        with:
+          path: tools/dl
+          key: bundle-downloads-${{ hashFiles('scripts/build-bundle.sh') }}
+
+      - name: Build bundle, smoke test and installer
+        run: bash scripts/build-installer.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: scorn-installer
+          path: dist/Scorn-Setup-*.exe
+          if-no-files-found: error

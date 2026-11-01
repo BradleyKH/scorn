@@ -1,0 +1,19 @@
+Source code offer
+
+Scorn is free software licensed under the GNU Affero General Public License,
+version 3 or later (see scorn-LICENSE.txt). Its complete source code is
+available at:
+
+    https://github.com/BradleyKH/scorn
+
+This installation includes Audiveris 5.11.0, also licensed under the GNU
+Affero General Public License v3 (see audiveris-LICENSE.txt). Its complete
+source code for this version is available at:
+
+    https://github.com/Audiveris/audiveris/tree/5.11.0
+
+Audiveris includes a Java runtime. The runtime's own license and notices are
+in the audiveris\Audiveris\runtime\legal folder of this installation.
+
+License texts for Python and the other bundled Python packages are in this
+folder, named after the package they belong to.

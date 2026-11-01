@@ -7,6 +7,10 @@ Two engines:
 - **Audiveris** (Java, rule based plus a small neural classifier). Reads PDFs directly and joins pages into one score. Ships with its own Java runtime.
 - **homr** (Python, transformer models on ONNX Runtime with CUDA). Reads one image at a time, so the PDF is rasterized at 300 dpi, each page is recognized, and the pages are joined.
 
+## Download
+
+If you only want to use Scorn, you don't need any of the setup below. Download `Scorn-Setup-<version>.exe` from the [latest release](https://github.com/BradleyKH/scorn/releases/latest) and run it. It installs for your account without administrator rights and adds a Scorn shortcut to the Start menu. The installer is unsigned, so Windows SmartScreen may warn on first run: choose **More info**, then **Run anyway**. To build the installer yourself, see [docs/desktop-app.md](docs/desktop-app.md#windows-installer).
+
 ## Working offline
 
 Once setup has run, everything works without internet: both engines, their models, Verovio, and the music21 corpus behind the fixtures are all on disk. Three rules keep it that way.
